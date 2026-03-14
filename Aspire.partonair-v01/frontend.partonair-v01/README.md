@@ -23,3 +23,28 @@ url : https://flowbite.com/
 
 npm install react-router-dom
 
+# Desktop task
+
+I need to review styling of file : nav.tsx 'behavior scroll transparence + on BG
+Adds logik to manage modal
+Adds logik to manage state of user, if is connected the navigation barre is not the same.
+
+# Mobile task
+
+I need to create the function for toggle dropdown file : nav.tsx
+
+# create doc perso css in file tailwind.config.js
+
+logo depuis https://fonts.google.com/icons?hl=fr
+
+REFACTO UN MAX MEME LE COTER CSS CREER DES COMPO PERSO POUR EVITER LES CLASS TROP LONGUE SUR LES ELEMENTS RECURENT
+
+NEXT STEP
+ADD
+ON BIG BUTTON "rejoins le réseau"
+OPEN MODAL CORRESPONDING
+
+ADD NEXT BIG BUTTON "Explore l'écosystème"
+ANCRE GO TO SECTION "Services"
+
+Transformer les bouton de base en composant
