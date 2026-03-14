@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1");
+@import "flowbite";
+
+@layer components {
+	.glass-panel {
+		@apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
+	}
+	.glass-panel-trouble {
+		@apply bg-white/10 backdrop-blur-xl border;
+	}
+	.text-gradient {
+		@apply bg-gradient-to-r from-electric-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent;
+	}
+	.shadow-glow {
+		box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+	}
+	.perspective-1000 {
+		perspective: 1000px;
+	}
+	.button-primary {
+		@apply text-white border border-electric-300 focus:ring-1 focus:outline-2 focus:ring-electric-300 hover:bg-electric-400 font-medium rounded-lg text-sm px-4 py-2 text-center me-3;
+	}
+	.button-secondary {
+		@apply text-white  bg-electric-600 hover:bg-electric-500 focus:ring-1 focus:outline-none focus:ring-electric-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-electric-600 dark:hover:bg-electric-500 dark:focus:ring-electric-300;
+	}
+	.button-primary-big {
+		@apply px-8 py-4 rounded-xl glass-panel text-white font-semibold text-lg hover:bg-white/10 transition-all border border-white/10;
+	}
+	.button-secondary-big {
+		@apply px-8 py-4 rounded-xl bg-gradient-to-r from-electric-600 to-indigo-600 text-white font-bold text-lg hover:shadow-glow hover:scale-[1.02] transition-all;
+	}
+}
+
+:root {
+	font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+	color-scheme: light dark;
+	color: rgba(255, 255, 255, 0.87);
+	background-color: #242424;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+}
+
+.material-symbols-outlined {
+	font-family: "Material Symbols Outlined";
+	font-weight: normal;
+	font-style: normal;
+	font-size: 24px;
+	line-height: 1;
+	letter-spacing: normal;
+	text-transform: none;
+	display: inline-block;
+	white-space: nowrap;
+	word-wrap: normal;
+	direction: ltr;
+	-webkit-font-feature-settings: "liga";
+	font-feature-settings: "liga";
+	-webkit-font-variation-settings: "FILL 0, wght 400, GRAD 0, opsz 48";
+	font-variation-settings: "FILL 0, wght 400, GRAD 0, opsz 48";
+}
+
+/* Reset checkbox  */
+[type="checkbox"] {
+	appearance: none;
+	background-color: transparent !important;
+	border: 2px solid #d1d5db;
+	border-radius: 0.375rem;
+}
+
+[type="checkbox"]:checked {
+	background-color: #10b981 !important;
+	border-color: #10b981 !important;
+}
+
+[type="checkbox"]:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5);
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+}
+
+@media (prefers-color-scheme: light) {
+	:root {
+		color: #213547;
+		background-color: #ffffff;
+	}
+	a:hover {
+		color: #747bff;
+	}
+	button {
+		background-color: #f9f9f9;
+	}
+}
+
+/*
+bg-body : #080E1B;
+bg-nav : #080E19; meme que body ?
+bg-card : #0B1221
+text-primary : white
+text-secondary : rgb(209 213 219)
+text-tertiary :#397DED
+bg granuleux pour la hero section :
+bg-[url('https://grainy-gradients.vercel.app/noise.svg')] 
+bg-cover bg-fixed bg-center min-h-screen
+
+
+text gradient :
+
+.text-gradient {
+    background-image: linear-gradient(to right, var(--tw-gradient-stops));
+    --tw-gradient-from: #fff var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+    --tw-gradient-to: rgb(96 165 250 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), #60A5FA var(--tw-gradient-via-position), var(--tw-gradient-to);
+    --tw-gradient-to: #2563EB var(--tw-gradient-to-position);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+ */

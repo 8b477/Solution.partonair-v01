@@ -1,0 +1,33 @@
+<Solution>
+  <Project Path="../../../OneDrive/Bureau/Bordel/partonair-v01/Database.partonair-v01/Database.partonair-v01.sqlproj" Id="d98453eb-c550-40ba-96d9-e154a3e5ec24">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="../../../OneDrive/Bureau/Bordel/partonair-v01/frontend.partonair-v01/" Type="Website" DisplayName="frontend.partonair-v01">
+    <BuildType Project="Debug" />
+    <Properties Name="WebsiteProperties">
+      <Property Name="Debug.AspNetCompiler.Debug" Value="&quot;True&quot;" />
+      <Property Name="Debug.AspNetCompiler.FixedNames" Value="&quot;false&quot;" />
+      <Property Name="Debug.AspNetCompiler.ForceOverwrite" Value="&quot;true&quot;" />
+      <Property Name="Debug.AspNetCompiler.PhysicalPath" Value="&quot;..\..\..\OneDrive\Bureau\Bordel\partonair-v01\frontend.partonair-v01\&quot;" />
+      <Property Name="Debug.AspNetCompiler.TargetPath" Value="&quot;PrecompiledWeb\localhost_57744\&quot;" />
+      <Property Name="Debug.AspNetCompiler.Updateable" Value="&quot;true&quot;" />
+      <Property Name="Debug.AspNetCompiler.VirtualPath" Value="&quot;/localhost_57744&quot;" />
+      <Property Name="Release.AspNetCompiler.Debug" Value="&quot;False&quot;" />
+      <Property Name="Release.AspNetCompiler.FixedNames" Value="&quot;false&quot;" />
+      <Property Name="Release.AspNetCompiler.ForceOverwrite" Value="&quot;true&quot;" />
+      <Property Name="Release.AspNetCompiler.PhysicalPath" Value="&quot;..\..\..\OneDrive\Bureau\Bordel\partonair-v01\frontend.partonair-v01\&quot;" />
+      <Property Name="Release.AspNetCompiler.TargetPath" Value="&quot;PrecompiledWeb\localhost_57744\&quot;" />
+      <Property Name="Release.AspNetCompiler.Updateable" Value="&quot;true&quot;" />
+      <Property Name="Release.AspNetCompiler.VirtualPath" Value="&quot;/localhost_57744&quot;" />
+      <Property Name="TargetFrameworkMoniker" Value="&quot;.NETFramework,Version%3Dv4.8&quot;" />
+      <Property Name="VWDPort" Value="&quot;57744&quot;" />
+    </Properties>
+  </Project>
+  <Project Path="../../../OneDrive/Bureau/ShareModels.partonair-v01/SharedModels.partonair_v01.csproj" />
+  <Project Path="Aspire.partonair-v01/Aspire.partonair-v01.AppHost/Aspire.partonair_v01.AppHost.csproj" />
+<Project Path="Aspire.partonair-v01/Aspire.partonair-v01.Server/API.partonair_v01.csproj" />
+  <Project Path="BLL.partonair_v01/BLL.partonair_v01.csproj" Id="5f2eb740-d16b-4cf0-a586-bdbdfdd35c60" />
+  <Project Path="Domain.partonair_v01/Domain.partonair_v01.csproj" Id="fb5f7ec0-bddf-48af-bb52-bd8133281b4c" />
+  <Project Path="Infrastructure.partonair_v01/Infrastructure.partonair_v01.csproj" Id="bf7af446-d35c-464d-8de5-63bc7c670af9" />
+</Solution>
