@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80" viewBox="0 0 320 120">
+  <circle cx="70" cy="60" r="18" fill="#F5C400"/>
+  <circle cx="110" cy="40" r="14" fill="#E03A3E"/>
+  <circle cx="110" cy="80" r="14" fill="#2E2E2E"/>
+  <line x1="70" y1="60" x2="110" y2="40" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+  <line x1="70" y1="60" x2="110" y2="80" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="70" cy="60" r="6" fill="#333"/>
+  <text x="150" y="70" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">PartonAir</text>
+</svg>
