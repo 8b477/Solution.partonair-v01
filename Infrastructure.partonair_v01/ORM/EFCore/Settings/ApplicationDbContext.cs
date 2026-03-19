@@ -1,5 +1,8 @@
 ﻿using Domain.partonair_v01.Entities;
 using Microsoft.EntityFrameworkCore;
+/*
+    dotnet ef migrations add init -o ORM/EFCore/Migrations
+*/
 
 namespace Infrastructure.partonair_v01.ORM.EFCore.Settings
 {

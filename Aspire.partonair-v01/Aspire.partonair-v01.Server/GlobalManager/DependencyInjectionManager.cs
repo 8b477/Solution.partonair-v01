@@ -3,6 +3,7 @@ using BLL.partonair_v01.Services;
 using API.partonair_v01.MiddlewareCustomExceptions;
 using Infrastructure.partonair_v01.Repositories;
 using Domain.partonair_v01.Contracts;
+using BLL.partonair_v01.MediatR.Configurations;
 
 
 namespace API.partonair_v01.GlobalManager
@@ -12,10 +13,10 @@ namespace API.partonair_v01.GlobalManager
         public static IServiceCollection AddApplicationLayer(this IServiceCollection services)
         {
             // MEDIATR
-            //services.AddMediatR(config =>
-            //{
-            //    config.RegisterServicesFromAssembly(typeof(ApplicationLayerMediatRConfiguration).Assembly);
-            //});
+            services.AddMediatR(config =>
+            {
+                config.RegisterServicesFromAssembly(typeof(ApplicationLayerMediatRConfiguration).Assembly);
+            });
 
             // USER
             services.AddScoped<IUserService, UserService>();
@@ -39,7 +40,7 @@ namespace API.partonair_v01.GlobalManager
             return services;
         }
 
-
+        
         public static IServiceCollection AddInfrastructureLayer(this IServiceCollection services)
         {
             // USER

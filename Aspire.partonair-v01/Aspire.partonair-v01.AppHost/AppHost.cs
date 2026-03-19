@@ -3,19 +3,17 @@ var builder = DistributedApplication.CreateBuilder(args);
 //redis
 var cache = builder.AddRedis("cache");
 
-//sql server
-//var sqlServer = builder.AddSqlServer("sqldata");
-var partonairDbLOCAL = builder.AddConnectionString("partonairdb");
+//Connection DB
+var dbConnection = builder.AddSqlServer("sqldata")
+                       .AddDatabase("partonairdb");
 
-
-//db
-//var partonairDb = sqlServer.AddDatabase("partonairdb");
+//var partonairDbLOCAL = builder.AddConnectionString("partonairdb");
 
 
 var server = builder.AddProject<Projects.API_partonair_v01>("server")
     .WithReference(cache)
     .WaitFor(cache)
-    .WithReference(partonairDbLOCAL)
+    .WithReference(dbConnection)
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints()
     .WithUrl("https://localhost:7540/scalar", "scalar");
