@@ -1,40 +1,54 @@
-﻿namespace API.partonair_v01.GlobalManager
+﻿using Infrastructure.partonair_v01.ORM.EFCore.Settings;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
+
+namespace API.partonair_v01.GlobalManager
 {
     public static class ApplicationBuilderManager
     {
-        public static WebApplication ConfigureDevelopmentMiddleware(this WebApplication app)
-        {
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-            return app;
-        }
-
-        public static WebApplication ConfigureExceptionHandling(this WebApplication app)
-        {
-            //app.UseExceptionHandler();
-            app.UseStatusCodePages();
-
-            return app;
-        }
-
         public static WebApplication ConfigureHttpPipeline(this WebApplication app)
         {
             app.UseHttpsRedirection();
-
+            app.UseStatusCodePages();
+            //app.UseExceptionHandler();
+            app.MapDefaultEndpoints();
+            app.MapControllers();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.MapOpenApi();
+            app.MapScalarApiReference();
+            app.MapSwagger();
+            app.UseSwaggerUI();
 
             return app;
         }
-
-        public static WebApplication ConfigureRouting(this WebApplication app)
+        public static async Task<WebApplication> WaitingMigrationIsReadyAsync(this WebApplication app)
         {
-            app.MapControllers();
+            await Task.Delay(10000);
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                context.Database.SetCommandTimeout(300);  // 5 minutes
+
+                int retries = 3;
+                for (int i = 0; i < retries; i++)
+                {
+                    try
+                    {
+                        await context.Database.MigrateAsync();
+                        break;
+                    }
+                    catch (SqlException) when (i < retries - 1)
+                    {
+                        await Task.Delay(5000); // 5 secondes d’attente
+                    }
+                }
+            }
 
             return app;
         }
+
     }
 }

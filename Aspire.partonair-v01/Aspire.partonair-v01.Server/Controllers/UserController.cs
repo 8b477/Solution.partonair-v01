@@ -1,7 +1,6 @@
 ﻿using BLL.partonair_v01.MediatR.Commands.Users;
 using BLL.partonair_v01.MediatR.Queries.Users;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedModels.partonair_v01.DTOS;
 

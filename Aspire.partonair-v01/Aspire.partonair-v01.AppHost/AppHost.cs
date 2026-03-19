@@ -5,10 +5,10 @@ var cache = builder.AddRedis("cache");
 
 //Connection DB
 var dbConnection = builder.AddSqlServer("sqldata")
+                       .WithDataVolume("sql-data")
                        .AddDatabase("partonairdb");
 
 //var partonairDbLOCAL = builder.AddConnectionString("partonairdb");
-
 
 var server = builder.AddProject<Projects.API_partonair_v01>("server")
     .WithReference(cache)
