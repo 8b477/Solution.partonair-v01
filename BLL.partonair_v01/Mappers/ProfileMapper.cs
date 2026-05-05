@@ -10,7 +10,12 @@ namespace BLL.partonair_v01.Mappers
         {
             return new ProfileUser
             {
+                Id = Guid.NewGuid(),
                 ProfileDescription = entity.ProfileDescription,
+                Skills = entity.Skills,
+                UrlCv = entity.UrlCv,
+                IsPublic = entity.IsPublic,
+                ProfileCreatedAt = DateTime.Now,
                 UserId = u.Id,
                 User = u
             };
@@ -18,12 +23,25 @@ namespace BLL.partonair_v01.Mappers
 
         public static ProfileViewDTO ToView(this ProfileUser e)
         {
-            return new ProfileViewDTO(e.Id,e.ProfileDescription,e.UserId);
-        } 
+            return new ProfileViewDTO(
+                e.Id,
+                e.ProfileDescription,
+                e.Skills,
+                e.UrlCv,
+                e.IsPublic,
+                e.Stars,
+                e.ProfileCreatedAt,
+                e.ProfileUpdatedAt,
+                e.UserId
+            );
+        }
 
         public static void ToEntity(this ProfileUpdateDTO p, ProfileUser e)
         {
-            e.ProfileDescription = p.ProfilDescritpion;            
+            e.ProfileDescription = p.ProfileDescription;
+            e.Skills = p.Skills;
+            e.UrlCv = p.UrlCv;
+            e.IsPublic = p.IsPublic;
         }
     }
 }

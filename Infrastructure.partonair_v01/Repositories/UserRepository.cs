@@ -17,7 +17,8 @@ namespace Infrastructure.partonair_v01.Repositories
 
         public async Task<User> GetByEmailAsync(string email)
         {
-            var result = await _dbSet.Where(u  => u.Mail == email)
+            var result = await _dbSet.Where(u => u.Mail == email)
+                                         .Include(u => u.ProfileUser)
                                          .FirstOrDefaultAsync();
 
             return 

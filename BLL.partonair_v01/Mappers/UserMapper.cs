@@ -31,6 +31,7 @@ namespace BLL.partonair_v01.Mappers
                     u.Mail,
                     u.IsActive,
                     u.UserCreatedAt,
+                    u.UserUpdatedAt,
                     u.LastConnection,
                     u.Role.ToString(),
                     u.ProfileUser?.Id

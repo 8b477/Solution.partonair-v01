@@ -1,11 +1,12 @@
 ﻿using API.partonair_v01.MiddlewareCustomExceptions;
+using API.partonair_v01.Token;
 using BLL.partonair_v01.Interfaces;
 using BLL.partonair_v01.MediatR.Configurations;
 using BLL.partonair_v01.Services;
 using Domain.partonair_v01.Contracts;
 using Infrastructure.partonair_v01.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 
 namespace API.partonair_v01.GlobalManager
@@ -31,6 +32,10 @@ namespace API.partonair_v01.GlobalManager
 
             // EVALUATION
             services.AddScoped<IEvaluationService, EvaluationService>();
+
+            // AUTHENTICATION
+            services.AddScoped<JWTService>();
+
 
             // UNIT OF WORK
             services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -61,10 +66,21 @@ namespace API.partonair_v01.GlobalManager
         }
 
 
-        public static IServiceCollection AddPresentationAPILayer(this IServiceCollection services)
+        public static IServiceCollection AddPresentationAPILayer(this IServiceCollection services, IConfiguration configuration)
         {
             // Add services to the container.
             services.AddControllers();
+
+            // CORS
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy.AllowAnyOrigin() // only for dev mod, need to specify for prod
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                });
+            });
 
             // Problem Details format, more at https://www.rfc-editor.org/rfc/rfc9457
             services.AddProblemDetails();
@@ -76,19 +92,45 @@ namespace API.partonair_v01.GlobalManager
             services.AddOpenApi();
 
             // JWT Authentication
-            services.AddAuthentication("Bearer")
-                .AddJwtBearer("Bearer", options => {
-                    options.TokenValidationParameters = new()
+            services.Configure<JwtSettings>(configuration.GetSection("JWT")); //chope la section JWT du appsettings.json
+
+            var jwtSettings = configuration.GetSection("JWT").Get<JwtSettings>()
+                             ?? throw new InvalidOperationException("JWT settings is missing");
+
+            var keyBytes = Convert.FromBase64String(jwtSettings.SecretKey);
+            var signingKey = new SymmetricSecurityKey(keyBytes);
+
+            services
+                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
+                        ValidIssuer = jwtSettings.Issuer,
                         ValidateAudience = true,
+                        ValidAudience = jwtSettings.Audience,
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
-                        ValidIssuer = "ton-issuer",
-                        ValidAudience = "ton-audience",
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("ta-cle-super-secrete-min-256bits"))
+                        IssuerSigningKey = signingKey,
+                        ClockSkew = TimeSpan.Zero
                     };
                 });
+
+            // Settings for authorization policies based on roles
+            services.AddAuthorizationBuilder()
+                    .AddPolicy("RequireRegisterRole", policy =>
+                    {
+                        policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
+                        policy.RequireAuthenticatedUser();
+                        policy.RequireRole("Register"); // required role
+                    })
+                    .AddPolicy("RequireAdminRole", policy =>
+                    {
+                        policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
+                        policy.RequireAuthenticatedUser();
+                        policy.RequireRole("Admin"); // *
+                    });
 
             return services;
         }

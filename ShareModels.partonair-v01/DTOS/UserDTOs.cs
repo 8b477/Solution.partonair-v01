@@ -7,8 +7,9 @@ namespace SharedModels.partonair_v01.DTOS
         Guid Id,
         string UserName,
         string Email,
-        bool IsPublic,
+        bool IsActive,
         DateTime UserCreatedAt,
+        DateTime? UserUpdatedAt,
         DateTime LastConnection,
         string Role,
         Guid? FK_Profile

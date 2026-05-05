@@ -13,5 +13,8 @@ namespace Domain.partonair_v01.Contracts
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();
         Task RollbackTransactionAsync();
+
+        Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation);
+        Task ExecuteInTransactionAsync(Func<Task> operation);
     }
 }

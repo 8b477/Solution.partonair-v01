@@ -65,7 +65,7 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Configurations
                 .IsRequired();
 
             // Check constraints
-            builder.ToTable(t => t.HasCheckConstraint("CK_Users_Role_Valid", "role IN ('Visitor', 'Admin', 'Moderator')"));
+            builder.ToTable(t => t.HasCheckConstraint("CK_Users_Role_Valid", "role IN ('Visitor', 'Employee', 'Company', 'Admin', 'Moderator')"));
         }
     }
 }

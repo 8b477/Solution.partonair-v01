@@ -10,12 +10,13 @@ namespace API.partonair_v01.GlobalManager
         public static WebApplication ConfigureHttpPipeline(this WebApplication app)
         {
             app.UseHttpsRedirection();
+            app.UseCors();
+            app.UseExceptionHandler();
             app.UseStatusCodePages();
-            //app.UseExceptionHandler();
-            app.MapDefaultEndpoints();
-            app.MapControllers();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.MapDefaultEndpoints();
+            app.MapControllers();
             app.MapOpenApi();
             app.MapScalarApiReference();
             app.MapSwagger();

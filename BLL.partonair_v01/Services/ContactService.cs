@@ -26,14 +26,12 @@ namespace BLL.partonair_v01.Services
         #region Commands
         public async Task<ContactViewDTO> CreateAsyncService(ContactCreateDTO contact)
         {
-            try
+            return await _UOW.ExecuteInTransactionAsync(async () =>
             {
-                await _UOW.BeginTransactionAsync();
-
                 var receiver = await _UOW.Users.GetByGuidAsync(contact.Id_Receiver);
                 var sender = await _UOW.Users.GetByGuidAsync(contact.Id_Sender);
                 var existingContact = await _UOW.Contacts.CheckIsContactExist(receiver.Id, sender.Id);
-                
+
                 if (existingContact)
                     throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, "The contact you wish to add is already in the friends list, please check your request");
 
@@ -41,16 +39,8 @@ namespace BLL.partonair_v01.Services
 
                 var result = await _UOW.Contacts.CreateAsync(contactEntity);
 
-                await _UOW.SaveChangesAsync();
-                await _UOW.CommitTransactionAsync();
-
                 return result.ToView();
-            }
-            catch
-            {
-                await _UOW.RollbackTransactionAsync();
-                throw;
-            }
+            });
         }
 
         public async Task DeleteAsyncService(Guid idSender, Guid idContact)

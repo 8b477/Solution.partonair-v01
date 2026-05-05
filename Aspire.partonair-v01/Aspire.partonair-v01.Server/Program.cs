@@ -10,7 +10,7 @@ builder.AddSqlServerDbContext<ApplicationDbContext>("partonairdb");
 builder.AddRedisOutputCache("cache");
 
 // Dependency Injection
-builder.Services.AddPresentationAPILayer()
+builder.Services.AddPresentationAPILayer(builder.Configuration)
                 .AddApplicationLayer()
                 .AddInfrastructureLayer();
 

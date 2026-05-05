@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore;
-using Domain.partonair_v01.Contracts;
-using Infrastructure.partonair_v01.ORM.EFCore.Settings;
+﻿using Domain.partonair_v01.Contracts;
+using Domain.partonair_v01.Entities;
 using Domain.partonair_v01.Exceptions;
 using Domain.partonair_v01.Exceptions.Enums;
+using Infrastructure.partonair_v01.ORM.EFCore.Settings;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.ComponentModel.DataAnnotations;
 
 
 namespace Infrastructure.partonair_v01.Repositories
@@ -93,6 +95,49 @@ namespace Infrastructure.partonair_v01.Repositories
                     _transaction = null;
                 }
             }
+        }
+
+        public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation)
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await BeginTransactionAsync();
+                try
+                {
+                    var result = await operation();
+                    await SaveChangesAsync();
+                    await CommitTransactionAsync();
+                    return result;
+                }
+                catch
+                {
+                    await RollbackTransactionAsync();
+                    throw;
+                }
+            });
+        }
+
+        public async Task ExecuteInTransactionAsync(Func<Task> operation)
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                await BeginTransactionAsync();
+                try
+                {
+                    await operation();
+                    await SaveChangesAsync();
+                    await CommitTransactionAsync();
+                }
+                catch
+                {
+                    await RollbackTransactionAsync();
+                    throw;
+                }
+            });
         }
 
         public void Dispose()

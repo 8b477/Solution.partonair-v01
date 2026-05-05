@@ -21,7 +21,11 @@ namespace SharedModels.partonair_v01.DTOS
     public record EvaluationUpdateDTO
         (
             Guid Id_Sender,
+
+            [MaxLength(500, ErrorMessage = "The field should contain max 500 characters")]
             string? Commentary,
+
+            [Range(0, 5, ErrorMessage = "The attempt value is between 0 and 5")]
             int? Value
         );
 

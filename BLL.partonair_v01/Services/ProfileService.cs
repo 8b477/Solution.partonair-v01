@@ -15,10 +15,8 @@ namespace BLL.partonair_v01.Services
 
         public async Task<ProfileViewDTO> CreateAsyncService(Guid idUser, ProfileCreateDTO profileDTO)
         {
-            try
+            return await _UOW.ExecuteInTransactionAsync(async () =>
             {
-                await _UOW.BeginTransactionAsync();
-
                 var existingUser = await _UOW.Users.GetByGuidAsync(idUser);
 
                 if (existingUser.ProfileUser is not null)
@@ -32,16 +30,8 @@ namespace BLL.partonair_v01.Services
 
                 var result = await _UOW.Users.Update(existingUser);
 
-                await _UOW.SaveChangesAsync();
-                await _UOW.CommitTransactionAsync();
-
                 return profilCreated.ToView();
-            }
-            catch
-            {
-                await _UOW.RollbackTransactionAsync();
-                throw;
-            }
+            });
         }
 
         public async Task<ProfileViewDTO> GetByGuidAsyncService(Guid id)

@@ -5,6 +5,7 @@
 	  <RootNamespace>API.partonair_v01</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UserSecretsId>21cef68f-5e1a-49d4-8b8c-f897f111ff08</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\OneDrive\Bureau\ShareModels.partonair-v01\SharedModels.partonair_v01.csproj" />
+    <ProjectReference Include="..\..\ShareModels.partonair-v01\SharedModels.partonair_v01.csproj" />
     <ProjectReference Include="..\..\BLL.partonair_v01\BLL.partonair_v01.csproj" />
     <ProjectReference Include="..\..\Infrastructure.partonair_v01\Infrastructure.partonair_v01.csproj" />
   </ItemGroup>

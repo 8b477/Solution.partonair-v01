@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\OneDrive\Bureau\ShareModels.partonair-v01\SharedModels.partonair_v01.csproj" />
+    <ProjectReference Include="..\ShareModels.partonair-v01\SharedModels.partonair_v01.csproj" />
     <ProjectReference Include="..\Domain.partonair_v01\Domain.partonair_v01.csproj" />
   </ItemGroup>
 

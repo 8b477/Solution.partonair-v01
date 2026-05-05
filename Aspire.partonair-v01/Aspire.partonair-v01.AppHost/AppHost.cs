@@ -1,3 +1,5 @@
+using k8s.KubeConfigModels;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 //redis
@@ -16,7 +18,8 @@ var server = builder.AddProject<Projects.API_partonair_v01>("server")
     .WithReference(dbConnection)
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints()
-    .WithUrl("https://localhost:7540/scalar", "scalar");
+    .WithUrl("https://localhost:7540/scalar", "scalar")
+    .WithUrl("https://localhost:7540/swagger/index.html", "swagger");
 
 var webfrontend = builder.AddViteApp("webfrontend", "../frontend.partonair-v01")
     .WithReference(server)

@@ -181,15 +181,16 @@ namespace BLL.partonair_v01.Services
 
         public async Task<User?> LogTest(string Mail, string Pass)
         {
-            var existingUser = await _UOW.Users.GetByEmailAsync(Mail);
-
-            bool IsValidateByBCryptService = _bCryptService.VerifyPasswordMatch(Pass, existingUser.PasswordHashed);
-
-            if (IsValidateByBCryptService)
+            try
             {
-                return existingUser;
+                var existingUser = await _UOW.Users.GetByEmailAsync(Mail);
+                bool isValid = _bCryptService.VerifyPasswordMatch(Pass, existingUser.PasswordHashed);
+                return isValid ? existingUser : null;
             }
-            return null;
+            catch
+            {
+                return null;
+            }
         }
 
 

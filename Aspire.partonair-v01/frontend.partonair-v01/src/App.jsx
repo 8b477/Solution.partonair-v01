@@ -1,11 +1,14 @@
 import { useRef } from "react";
 import { Route, Routes } from "react-router-dom";
 import "./App.css";
+import AuthProvider from "./contexts/auth/Auth-provider";
 import ModalProvider from "./components/contexts/modals/Modal-provider";
 import Footer from "./components/layout/Footer";
 import Nav from "./components/layout/Nav";
 import Home from "./pages/home/Home";
 import NotFound from "./pages/Not-found";
+import Profile from "./pages/profile/Profile";
+import ProfileSetup from "./pages/profile/Profile-setup";
 
 function App() {
 	const servicesRef = useRef(null);
@@ -22,20 +25,19 @@ function App() {
 	};
 
 	return (
-		<>
+		<AuthProvider>
 			<ModalProvider>
 				<Nav onServicesClicked={scrollToServices} onHomeButtonClicked={scrollToHomeSection} />
 				<Routes>
 					<Route path="/" element={<Home servicesRef={servicesRef} homeRef={homeRef} />} />
-					{/* <Route path="/about" element={<h1>About</h1>} /> */}
-					{/* <Route path="/contact" element={<h1>Contact</h1>} /> */}
-					{/* <Route path="/faq" element={<h1>FAQ</h1>} /> */}
+					<Route path="/profile/setup" element={<ProfileSetup />} />
+					<Route path="/profile" element={<Profile />} />
 					<Route path="*" element={<NotFound />} />
 				</Routes>
 			</ModalProvider>
 
 			<Footer />
-		</>
+		</AuthProvider>
 	);
 }
 
