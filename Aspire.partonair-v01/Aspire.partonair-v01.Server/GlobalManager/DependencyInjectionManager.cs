@@ -6,7 +6,10 @@ using BLL.partonair_v01.Services;
 using Domain.partonair_v01.Contracts;
 using Infrastructure.partonair_v01.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using System.Reflection;
 
 
 namespace API.partonair_v01.GlobalManager
@@ -42,6 +45,10 @@ namespace API.partonair_v01.GlobalManager
 
             // BCrypt
             services.AddScoped<IBCryptService, BCryptService>();
+
+            // HTTP ACCESS
+            services.AddHttpContextAccessor();
+            services.AddScoped<IHttpContextAccesor, HttpContextAccesor>();
 
 
             return services;
@@ -83,12 +90,41 @@ namespace API.partonair_v01.GlobalManager
             });
 
             // Problem Details format, more at https://www.rfc-editor.org/rfc/rfc9457
-            services.AddProblemDetails();
+            services.AddProblemDetails(options =>
+            {
+                options.CustomizeProblemDetails = context =>
+                {
+                    // Préserve le Detail déjà défini par le CustomExceptionHandler
+                    if (context.Exception is not null && string.IsNullOrEmpty(context.ProblemDetails.Detail))
+                    {
+                        context.ProblemDetails.Detail = context.Exception.Message;
+                    }
+                };
+            });
+            services.AddExceptionHandler<CustomExceptionHandler>();
             services.AddExceptionHandler<CustomExceptionHandler>();
 
             // Swagger/OpenAPI, more at https://aka.ms/aspnetcore/swashbuckle
             services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(options =>
+            {
+                // Récupère le chemin du fichier XML généré
+                var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+
+                options.IncludeXmlComments(xmlPath);
+
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Entrez votre token JWT, uniquement la valeur de celui-ci pas de préfix"
+                });
+
+            });
             services.AddOpenApi();
 
             // JWT Authentication
@@ -113,23 +149,62 @@ namespace API.partonair_v01.GlobalManager
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = signingKey,
-                        ClockSkew = TimeSpan.Zero
+                        ClockSkew = TimeSpan.Zero,
+                        RoleClaimType = "role",
+                        NameClaimType = "sub"
+                    };
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = ctx =>
+                        {
+                            var auth = ctx.Request.Headers.Authorization.ToString();
+                            Console.WriteLine($"[JWT] Authorization header: '{(string.IsNullOrEmpty(auth) ? "ABSENT" : auth[..Math.Min(40, auth.Length)] + "...")}'");
+                            return Task.CompletedTask;
+                        },
+                        OnAuthenticationFailed = ctx =>
+                        {
+                            Console.WriteLine($"[JWT] Auth failed: {ctx.Exception.GetType().Name} — {ctx.Exception.Message}");
+                            return Task.CompletedTask;
+                        },
+                        OnTokenValidated = ctx =>
+                        {
+                            Console.WriteLine($"[JWT] Token validated — sub: {ctx.Principal?.FindFirst("sub")?.Value}");
+                            return Task.CompletedTask;
+                        }
                     };
                 });
 
             // Settings for authorization policies based on roles
             services.AddAuthorizationBuilder()
-                    .AddPolicy("RequireRegisterRole", policy =>
+                    .AddPolicy("RequireVisitorRole", policy =>
                     {
                         policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
                         policy.RequireAuthenticatedUser();
-                        policy.RequireRole("Register"); // required role
+                        policy.RequireRole("Visitor"); // required role 'Visitor'
+                    })
+                    .AddPolicy("RequireEmployeeRole", policy =>
+                    {
+                        policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
+                        policy.RequireAuthenticatedUser();
+                        policy.RequireRole("Employee"); // required role 'Employee'
+                    })
+                    .AddPolicy("RequireCompanyRole", policy =>
+                    {
+                        policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
+                        policy.RequireAuthenticatedUser();
+                        policy.RequireRole("Company"); // required role 'Company'
                     })
                     .AddPolicy("RequireAdminRole", policy =>
                     {
                         policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
                         policy.RequireAuthenticatedUser();
-                        policy.RequireRole("Admin"); // *
+                        policy.RequireRole("Admin"); // required role 'Admin'
+                    })
+                    .AddPolicy("RequireMustRole", policy =>
+                    {
+                        policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
+                        policy.RequireAuthenticatedUser();
+                        policy.RequireRole("Visitor","Employee","Company","Admin"); // required role one of role
                     });
 
             return services;

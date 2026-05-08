@@ -33,7 +33,7 @@ namespace API.partonair_v01.GlobalManager
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 context.Database.SetCommandTimeout(300);  // 5 minutes
 
-                int retries = 3;
+                int retries = 10;
                 for (int i = 0; i < retries; i++)
                 {
                     try
@@ -41,9 +41,9 @@ namespace API.partonair_v01.GlobalManager
                         await context.Database.MigrateAsync();
                         break;
                     }
-                    catch (SqlException) when (i < retries - 1)
+                    catch (Exception) when (i < retries - 1)
                     {
-                        await Task.Delay(5000); // 5 secondes d’attente
+                        await Task.Delay(10000);
                     }
                 }
             }

@@ -6,6 +6,11 @@ using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.partonair_v01.ORM.EFCore.Factory
 {
+    /*
+        Utilisée uniquement au design-time (migrations EF Core).
+        Permet à EF Core de créer/appliquer des migrations sans le contexte
+        d'injection de dépendances complet. Lit la config depuis appsettings.Development.json.
+    */
     public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
     {
         public ApplicationDbContext CreateDbContext(string[] args)

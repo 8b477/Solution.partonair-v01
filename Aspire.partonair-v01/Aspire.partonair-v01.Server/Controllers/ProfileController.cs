@@ -1,6 +1,8 @@
-﻿using BLL.partonair_v01.MediatR.Commands.Profiles;
+﻿using API.partonair_v01.Token;
+using BLL.partonair_v01.MediatR.Commands.Profiles;
 using BLL.partonair_v01.MediatR.Queries.Profiles;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedModels.partonair_v01.DTOS;
 
@@ -22,9 +24,11 @@ namespace API.partonair_v01.Controllers
         #region DI
 
         private readonly IMediator _mediator;
-        public ProfileController(IMediator mediator)
+        private readonly IHttpContextAccesor _httpAccesor;
+        public ProfileController(IMediator mediator, IHttpContextAccesor httpAccesor)
         {
             _mediator = mediator;
+            _httpAccesor = httpAccesor;
         }
 
         #endregion
@@ -32,16 +36,27 @@ namespace API.partonair_v01.Controllers
 
 
         #region <-------------> CREATE <------------->
-
+        [Authorize]
         [HttpPost]
-        public async Task<IActionResult> CreateAsync(Guid idUser, ProfileCreateDTO profileCreateDTO)
+        public async Task<IActionResult> CreateAsync(ProfileCreateDTO profileCreateDTO)
         {
-            var profile = await _mediator.Send(new AddProfileCommand(idUser, profileCreateDTO));
+            string? idUser = _httpAccesor.UserId();
 
-            return
-                profile is null
-                ? BadRequest()
-                : Ok(new { profile });
+
+            if (string.IsNullOrEmpty(idUser))
+            {
+                return Unauthorized("Something was wrong with your credentials");
+            }
+            else
+            {
+                Guid GuidUser = idUser.FromStringToGuid();
+                var profile = await _mediator.Send(new AddProfileCommand(GuidUser, profileCreateDTO));
+
+                return
+                    profile is null
+                    ? BadRequest()
+                    : Ok(new { profile });
+            }
         }
 
         #endregion

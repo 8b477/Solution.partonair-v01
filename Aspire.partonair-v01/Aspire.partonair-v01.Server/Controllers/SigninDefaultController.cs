@@ -38,7 +38,7 @@ namespace API.partonair_v01.Controllers
 
             if (result is not null)
             {
-                string token = _tokenService.GenerateToken(result.Name, result.Role.ToString());
+                string token = _tokenService.GenerateToken(result.Id.ToString(), result.Role.ToString());
                 return Ok(new LoginDefaultResponse(token));
             }
             return BadRequest("Les identifiants ne sont pas corrects");

@@ -34,8 +34,8 @@ namespace API.partonair_v01.Token
                     Issuer = _jwtSettings.Issuer,
                     Audience = _jwtSettings.Audience,
                     Subject = new ClaimsIdentity([
-                        new Claim(ClaimTypes.NameIdentifier, userId),
-                        new Claim(ClaimTypes.Role, role)
+                        new Claim(ClaimTypes.NameIdentifier, userId), // id
+                        new Claim(ClaimTypes.Role, role)              // role
                     ]),
                     Expires = DateTime.UtcNow.AddHours(_jwtSettings.ExpiryHours),
                     SigningCredentials = new SigningCredentials(
@@ -51,5 +51,6 @@ namespace API.partonair_v01.Token
                 throw new Exception("Token generation failed: " + ex.Message, ex);
             }
         }
+
     }
 }

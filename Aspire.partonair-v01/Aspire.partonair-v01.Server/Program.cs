@@ -17,10 +17,10 @@ builder.Services.AddPresentationAPILayer(builder.Configuration)
 
 var app = builder.Build();
 
-app.WaitingMigrationIsReadyAsync().Wait();
-
 app.ConfigureHttpPipeline()
    .UseOutputCache()
    .UseFileServer();
+
+_ = Task.Run(() => app.WaitingMigrationIsReadyAsync());
 
 app.Run();

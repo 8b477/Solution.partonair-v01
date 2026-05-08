@@ -1,6 +1,7 @@
 ﻿using BLL.partonair_v01.MediatR.Commands.Users;
 using BLL.partonair_v01.MediatR.Queries.Users;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedModels.partonair_v01.DTOS;
 
@@ -13,7 +14,7 @@ namespace API.partonair_v01.Controllers
     {
 
         // <--------------------------------> TODO <-------------------------------->
-        // Need review later when Authentication is setup for retrieve some data by token
+        // GetAllAsync() -> need to change authorisation
         // <--------------------------------> **** <-------------------------------->
 
 
@@ -70,6 +71,7 @@ namespace API.partonair_v01.Controllers
         /// <response code="404">Non trouvé - Aucun utilisateur avec cet identifiant.</response>
         /// <response code="500">Erreur interne serveur.</response>
         /// <returns>Les données de l'utilisateur correspondant.</returns>
+        [Authorize(Policy = "RequireAdminRole")]
         [HttpGet("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -91,7 +93,7 @@ namespace API.partonair_v01.Controllers
         /// <response code="200">Succès - Liste des utilisateurs retournée.</response>
         /// <response code="500">Erreur interne serveur.</response>
         /// <returns>Une collection de tous les utilisateurs.</returns>
-        //[Authorize(Roles = "Visitor")]
+        [Authorize(Policy = "RequireVisitorRole")]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -114,6 +116,7 @@ namespace API.partonair_v01.Controllers
         /// <response code="204">Aucun contenu - Aucun utilisateur ne correspond au nom fourni.</response>
         /// <response code="500">Erreur interne serveur.</response>
         /// <returns>Une collection d'utilisateurs correspondant au nom.</returns>
+        [Authorize(Policy = "RequireAdminRole")]
         [HttpGet("Name")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -140,6 +143,7 @@ namespace API.partonair_v01.Controllers
         /// <response code="204">Aucun contenu - Aucun utilisateur avec ce rôle.</response>
         /// <response code="500">Erreur interne serveur.</response>
         /// <returns>Une collection d'utilisateurs avec le rôle spécifié.</returns>
+        [Authorize(Policy = "RequireAdminRole")]
         [HttpGet("Role")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -166,6 +170,7 @@ namespace API.partonair_v01.Controllers
         /// <response code="204">Aucun contenu - Aucun utilisateur avec cet e-mail.</response>
         /// <response code="500">Erreur interne serveur.</response>
         /// <returns>Les données de l'utilisateur correspondant.</returns>
+        [Authorize(Policy = "RequireAdminRole")]
         [HttpGet("Email")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -191,6 +196,7 @@ namespace API.partonair_v01.Controllers
         /// </summary>
         /// <param name="id">L'identifiant GUID de l'utilisateur.</param>
         /// <param name="newRole">Le nouveau rôle : Employee ou Company.</param>
+        [Authorize(Roles = "RequireMustRole")]
         [HttpPatch("{id:guid}/role")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -217,6 +223,7 @@ namespace API.partonair_v01.Controllers
         /// <response code="404">Non trouvé - Aucun utilisateur avec cet identifiant.</response>
         /// <response code="500">Erreur interne serveur.</response>
         /// <returns>Les données de l'utilisateur mis à jour.</returns>
+        [Authorize(Roles = "RequireMustRole")]
         [HttpPatch("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -281,6 +288,7 @@ namespace API.partonair_v01.Controllers
         /// <response code="404">Non trouvé - Aucun utilisateur avec cet identifiant.</response>
         /// <response code="500">Erreur interne serveur.</response>
         /// <returns>Aucun contenu.</returns>
+        [Authorize(Roles = "RequireMustRole")]
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
