@@ -9,7 +9,7 @@ namespace BLL.partonair_v01.MediatR.Commands.Profiles
         private readonly IProfileService _profileService = profilService;
         public Task Handle(DeleteProfileCommand request, CancellationToken cancellationToken)
         {
-            return  _profileService.DeleteAsyncService(request.Id);
+            return  _profileService.DeleteAsyncService(request.IdUser, request.IdProfile);
         }
     }
 }
