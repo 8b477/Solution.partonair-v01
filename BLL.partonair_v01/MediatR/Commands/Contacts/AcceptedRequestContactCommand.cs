@@ -3,5 +3,5 @@
 
 namespace BLL.partonair_v01.MediatR.Commands.Contacts
 {
-    public record AcceptedRequestContactCommand(Guid IdContact) : IRequest<string>;
+    public record AcceptedRequestContactCommand(Guid UserId, Guid IdContact) : IRequest<string>;
 }

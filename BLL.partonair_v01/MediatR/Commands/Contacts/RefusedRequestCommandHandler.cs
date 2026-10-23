@@ -10,7 +10,7 @@ namespace BLL.partonair_v01.MediatR.Commands.Contacts
         private readonly IContactService _contactService = contactService;
         public async Task<string> Handle(RefusedRequestCommand request, CancellationToken cancellationToken)
         {
-            return await _contactService.RefusedRequestAsyncService(request.IdContact);
+            return await _contactService.RefusedRequestAsyncService(request.UserId, request.IdContact);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Infrastructure.partonair_v01.Repositories
         public async Task<Contact> FindContactAsync(Guid senderId, Guid contactId)
         {
             var result = await _ctx.Contacts
-                                     .Where(c => c.ContactReceiverId == senderId && c.ContactSenderId ==  contactId)
+                                     .Where(c => c.ContactSenderId == senderId && c.ContactReceiverId == contactId)
                                      .FirstOrDefaultAsync();
 
             return result ?? throw new InfrastructureLayerException(InfrastructureLayerErrorType.EntityIsNullException,$"Identifier sender : {senderId} or identifier receiver : {contactId} - No match");
@@ -77,6 +77,51 @@ namespace Infrastructure.partonair_v01.Repositories
                 return true;
 
             return false;
+        }
+
+        public async Task<ICollection<Contact>> GetPairAsync(Guid firstUserId, Guid secondUserId)
+        {
+            return await _dbSet
+                .Where(contact =>
+                    (contact.ContactSenderId == firstUserId && contact.ContactReceiverId == secondUserId) ||
+                    (contact.ContactSenderId == secondUserId && contact.ContactReceiverId == firstUserId))
+                .Include(contact => contact.ContactSender).ThenInclude(user => user.ProfileUser)
+                .Include(contact => contact.ContactReceiver).ThenInclude(user => user.ProfileUser)
+                .ToListAsync();
+        }
+
+        public async Task<ICollection<Contact>> GetByUserAndStatusAsync(Guid userId, StatusContact status)
+        {
+            return await _dbSet
+                .Where(contact =>
+                    (contact.ContactSenderId == userId || contact.ContactReceiverId == userId) &&
+                    contact.ContactStatus == status)
+                .Include(contact => contact.ContactSender).ThenInclude(user => user.ProfileUser)
+                .Include(contact => contact.ContactReceiver).ThenInclude(user => user.ProfileUser)
+                .ToListAsync();
+        }
+
+        public async Task<ICollection<Contact>> GetBySenderAndStatusAsync(Guid senderId, StatusContact status)
+        {
+            return await _dbSet
+                .Where(contact => contact.ContactSenderId == senderId && contact.ContactStatus == status)
+                .Include(contact => contact.ContactReceiver).ThenInclude(user => user.ProfileUser)
+                .ToListAsync();
+        }
+
+        public async Task<ICollection<Contact>> GetByReceiverAndStatusAsync(Guid receiverId, StatusContact status)
+        {
+            return await _dbSet
+                .Where(contact => contact.ContactReceiverId == receiverId && contact.ContactStatus == status)
+                .Include(contact => contact.ContactSender).ThenInclude(user => user.ProfileUser)
+                .ToListAsync();
+        }
+
+        public async Task<ICollection<Contact>> GetAllByReceiverAsync(Guid receiverId)
+        {
+            return await _dbSet
+                .Where(contact => contact.ContactReceiverId == receiverId)
+                .ToListAsync();
         }
     }
 }
