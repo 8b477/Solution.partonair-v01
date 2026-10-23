@@ -16,6 +16,7 @@ namespace Infrastructure.partonair_v01.Repositories
         private IDbContextTransaction? _transaction;
         private bool _disposed;
 
+
         // I_REPO + LAZY LOAD
         private IUserRepository? _userRepository;
         public IUserRepository Users => _userRepository ??= new UserRepository(_context);
@@ -25,6 +26,9 @@ namespace Infrastructure.partonair_v01.Repositories
 
         private IContactRepository? _contactRepository;
         public IContactRepository Contacts => _contactRepository ??= new ContactRepository(_context);
+
+        private IMessageRepository? _messageRepository;
+        public IMessageRepository Messages => _messageRepository ??= new MessageRepository(_context);
 
         private IEvaluationRepository? _evaluationRepository;
         public IEvaluationRepository Evaluations => _evaluationRepository ??= new EvaluationRepository(_context);

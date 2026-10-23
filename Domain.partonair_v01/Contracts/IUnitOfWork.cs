@@ -7,6 +7,7 @@ namespace Domain.partonair_v01.Contracts
         IUserRepository Users { get; }
         IProfileRepository Profiles { get; }
         IContactRepository Contacts { get; }
+        IMessageRepository Messages { get; }
         IEvaluationRepository Evaluations { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

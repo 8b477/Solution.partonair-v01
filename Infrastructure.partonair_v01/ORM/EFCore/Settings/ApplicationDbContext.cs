@@ -20,6 +20,7 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Settings
         public DbSet<Announcement> Annoucements { get; set; } = null!;
         public DbSet<Evaluation> Evaluations { get; set; } = null!;
         public DbSet<Contact> Contacts { get; set; } = null!;
+        public DbSet<Message> Messages { get; set; } = null!;
 
 
         // Apply configs

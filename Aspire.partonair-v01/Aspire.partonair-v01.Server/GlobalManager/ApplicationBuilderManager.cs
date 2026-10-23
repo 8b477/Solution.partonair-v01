@@ -1,4 +1,5 @@
-﻿using Infrastructure.partonair_v01.ORM.EFCore.Settings;
+﻿using API.partonair_v01.Hubs;
+using Infrastructure.partonair_v01.ORM.EFCore.Settings;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -17,6 +18,7 @@ namespace API.partonair_v01.GlobalManager
             app.UseAuthorization();
             app.MapDefaultEndpoints();
             app.MapControllers();
+            app.MapHub<RealtimeHub>("/hubs/realtime").RequireAuthorization();
             app.MapOpenApi();
             app.MapScalarApiReference();
             app.MapSwagger();

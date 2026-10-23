@@ -14,6 +14,15 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 			},
+			"/hubs": {
+				target:
+					process.env.services__server__https__0 ||
+					process.env.services__server__http__0 ||
+					"https://localhost:7540",
+				changeOrigin: true,
+				secure: false,
+				ws: true,
+			},
 		},
 	},
 });
