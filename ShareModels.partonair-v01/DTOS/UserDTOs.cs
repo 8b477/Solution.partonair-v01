@@ -71,7 +71,7 @@ namespace SharedModels.partonair_v01.DTOS
     //public record UserChangeRoleDTO
     //(
     //    [Required]
-    //    [ValidRole]      
+    //    [ValidRole]
     //    string Role
     //);
 

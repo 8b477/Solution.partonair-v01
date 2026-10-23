@@ -25,5 +25,7 @@ namespace Domain.partonair_v01.Entities
         public ICollection<Evaluation> EvaluationsSent { get; set; } = [];
         public ICollection<Contact> ContactsSent { get; set; } = [];
         public ICollection<Contact> ContactsReceived { get; set; } = [];
+        public ICollection<Message> MessagesSent { get; set; } = [];
+        public ICollection<Message> MessagesReceived { get; set; } = [];
     }
 }

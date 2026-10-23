@@ -37,6 +37,7 @@ namespace API.partonair_v01.MiddlewareCustomExceptions
                     ApplicationLayerErrorType.ConstraintViolationErrorException => 409,
                     ApplicationLayerErrorType.SaltParseBCryptException => 500,
                     ApplicationLayerErrorType.UnexpectedErrorException => 500,
+                    ApplicationLayerErrorType.QuotaExceededException => 429,
                     
                     _ => 500
                 },
@@ -57,6 +58,7 @@ namespace API.partonair_v01.MiddlewareCustomExceptions
                         404 => "Resource not found",
                         503 => "Database unavailable",
                         409 => "Concurrency conflict",
+                        429 => "Too many requests",
                         499 => "Request canceled",
                         _ => "Internal error"
                     },

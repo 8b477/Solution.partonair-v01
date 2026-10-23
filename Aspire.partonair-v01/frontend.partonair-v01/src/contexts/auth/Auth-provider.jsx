@@ -7,15 +7,16 @@ const AuthProvider = ({ children }) => {
 		return stored ? JSON.parse(stored) : null;
 	});
 
-	const login = ({ token, userId, userName, profileId, role }) => {
-		const data = { token, userId, userName, profileId, role };
+	const login = ({ token, userId, userName, profileId, role, avatarSeed }) => {
+		const data = { token, userId, userName, profileId, role, avatarSeed };
 		setAuth(data);
 		localStorage.setItem("auth", JSON.stringify(data));
 	};
 
-	const updateProfileId = (profileId) => {
+	// Met à jour une partie de la session (profileId, role, userName, avatarSeed...) sans se reconnecter.
+	const updateAuth = (changes) => {
 		setAuth((prev) => {
-			const updated = { ...prev, profileId };
+			const updated = { ...prev, ...changes };
 			localStorage.setItem("auth", JSON.stringify(updated));
 			return updated;
 		});
@@ -27,7 +28,7 @@ const AuthProvider = ({ children }) => {
 	};
 
 	return (
-		<AuthContext.Provider value={{ auth, login, logout, updateProfileId }}>
+		<AuthContext.Provider value={{ auth, login, logout, updateAuth }}>
 			{children}
 		</AuthContext.Provider>
 	);

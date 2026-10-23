@@ -25,7 +25,7 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.Announcement", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.Announcement", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -72,7 +72,7 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                     b.ToTable("Announcements", (string)null);
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.Contact", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.Contact", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -140,7 +140,7 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.Evaluation", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.Evaluation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -188,7 +188,7 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.Images", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.Images", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -239,7 +239,7 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.ProfileUser", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.ProfileUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -296,7 +296,7 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                     b.ToTable("ProfileUsers", (string)null);
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.User", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -362,9 +362,9 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.Announcement", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.Announcement", b =>
                 {
-                    b.HasOne("ShareModels.partonair_v01.Entities.User", "User")
+                    b.HasOne("SharedModels.partonair_v01.Entities.User", "User")
                         .WithMany("Announcements")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -374,16 +374,16 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.Contact", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.Contact", b =>
                 {
-                    b.HasOne("ShareModels.partonair_v01.Entities.User", "ContactReceiver")
+                    b.HasOne("SharedModels.partonair_v01.Entities.User", "ContactReceiver")
                         .WithMany("ContactsReceived")
                         .HasForeignKey("ContactReceiverId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_CONTACT_RECEIVER");
 
-                    b.HasOne("ShareModels.partonair_v01.Entities.User", "ContactSender")
+                    b.HasOne("SharedModels.partonair_v01.Entities.User", "ContactSender")
                         .WithMany("ContactsSent")
                         .HasForeignKey("ContactSenderId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -395,16 +395,16 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                     b.Navigation("ContactSender");
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.Evaluation", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.Evaluation", b =>
                 {
-                    b.HasOne("ShareModels.partonair_v01.Entities.User", "Receiver")
+                    b.HasOne("SharedModels.partonair_v01.Entities.User", "Receiver")
                         .WithMany("EvaluationsReceived")
                         .HasForeignKey("EvalReceiverId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_EVAL_RECEIVER");
 
-                    b.HasOne("ShareModels.partonair_v01.Entities.User", "Sender")
+                    b.HasOne("SharedModels.partonair_v01.Entities.User", "Sender")
                         .WithMany("EvaluationsSent")
                         .HasForeignKey("EvalSenderId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -416,11 +416,11 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                     b.Navigation("Sender");
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.Images", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.Images", b =>
                 {
-                    b.HasOne("ShareModels.partonair_v01.Entities.ProfileUser", "ProfileUser")
+                    b.HasOne("SharedModels.partonair_v01.Entities.ProfileUser", "ProfileUser")
                         .WithOne("Image")
-                        .HasForeignKey("ShareModels.partonair_v01.Entities.Images", "FkProfileUser")
+                        .HasForeignKey("SharedModels.partonair_v01.Entities.Images", "FkProfileUser")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_PROFILE_USER");
@@ -428,11 +428,11 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                     b.Navigation("ProfileUser");
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.ProfileUser", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.ProfileUser", b =>
                 {
-                    b.HasOne("ShareModels.partonair_v01.Entities.User", "User")
+                    b.HasOne("SharedModels.partonair_v01.Entities.User", "User")
                         .WithOne("ProfileUser")
-                        .HasForeignKey("ShareModels.partonair_v01.Entities.ProfileUser", "UserId")
+                        .HasForeignKey("SharedModels.partonair_v01.Entities.ProfileUser", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_USER");
@@ -440,12 +440,12 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.ProfileUser", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.ProfileUser", b =>
                 {
                     b.Navigation("Image");
                 });
 
-            modelBuilder.Entity("ShareModels.partonair_v01.Entities.User", b =>
+            modelBuilder.Entity("SharedModels.partonair_v01.Entities.User", b =>
                 {
                     b.Navigation("Announcements");
 

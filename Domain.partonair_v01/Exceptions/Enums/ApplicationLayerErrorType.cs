@@ -5,6 +5,7 @@
         ConstraintViolationErrorException,
         EntityIsNotExistingException,
         SaltParseBCryptException,
-        UnexpectedErrorException
+        UnexpectedErrorException,
+        QuotaExceededException
     }
 }

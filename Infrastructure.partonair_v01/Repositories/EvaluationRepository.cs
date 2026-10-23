@@ -28,5 +28,14 @@ namespace Infrastructure.partonair_v01.Repositories
             return result ?? throw new InfrastructureLayerException(InfrastructureLayerErrorType.EntityIsNullException, $"Identifier : {id} - No match");
         }
 
+        public async Task<List<Evaluation>> GetByReceiverAsync(Guid receiverId)
+        {
+            return await _dbSet
+                .Where(e => e.EvalReceiverId == receiverId)
+                .Include(e => e.Sender).ThenInclude(user => user.ProfileUser)
+                .OrderByDescending(e => e.EvaluationUpdatedAt ?? e.EvaluationCreatedAt)
+                .ToListAsync();
+        }
+
     }
 }

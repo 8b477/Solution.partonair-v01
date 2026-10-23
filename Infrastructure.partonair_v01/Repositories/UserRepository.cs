@@ -56,22 +56,23 @@ namespace Infrastructure.partonair_v01.Repositories
                                      .Include(u => u.ProfileUser)
                                      .ToListAsync();
 
-            if (result.Count == 0)
-                throw new InfrastructureLayerException(InfrastructureLayerErrorType.ResourceNotFoundException, $"The role : {role} - no match");
-
             return result;
         }
 
-        public async Task<User> GetByForeignKeyProfilAsync(Guid idProfile)
+        public async Task<User> GetByForeignKeyProfilAsync(Guid idUser)
         {
-            var result = await _dbSet
-                                     .Where(u => u.Id == idProfile)
-                                     .FirstOrDefaultAsync();
+            var user = await _dbSet
+                .Include(u => u.ProfileUser)
+                .SingleOrDefaultAsync(u => u.Id == idUser);
 
-            if (result is null)
-                throw new InfrastructureLayerException(InfrastructureLayerErrorType.ResourceNotFoundException, $"The identifier : {idProfile} - no match");
+            if (user?.ProfileUser is null)
+            {
+                throw new InfrastructureLayerException(
+                    InfrastructureLayerErrorType.ResourceNotFoundException,
+                    $"Aucun utilisateur avec un profil associé n'a été trouvé pour l'identifiant : {idUser}.");
+            }
 
-            return result;
+            return user;
         }
 
         #endregion

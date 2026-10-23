@@ -6,11 +6,11 @@ using BLL.partonair_v01.Services;
 using Domain.partonair_v01.Contracts;
 using Infrastructure.partonair_v01.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Reflection;
-
+using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace API.partonair_v01.GlobalManager
 {
@@ -32,6 +32,9 @@ namespace API.partonair_v01.GlobalManager
 
             // CONTACT
             services.AddScoped<IContactService, ContactService>();
+
+            // MESSAGE
+            services.AddScoped<IMessageService, MessageService>();
 
             // EVALUATION
             services.AddScoped<IEvaluationService, EvaluationService>();
@@ -66,6 +69,9 @@ namespace API.partonair_v01.GlobalManager
             // CONTACT
             services.AddScoped<IContactRepository, ContactRepository>();
 
+            // MESSAGE
+            services.AddScoped<IMessageRepository, MessageRepository>();
+
             // EVALUATION
             services.AddScoped<IEvaluationRepository, EvaluationRepository>();
 
@@ -76,7 +82,15 @@ namespace API.partonair_v01.GlobalManager
         public static IServiceCollection AddPresentationAPILayer(this IServiceCollection services, IConfiguration configuration)
         {
             // Add services to the container.
-            services.AddControllers();
+            services.AddControllers().AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(
+                    new System.Text.Json.Serialization.JsonStringEnumConverter()
+                );
+            });
+
+            // SIGNALR (messagerie temps réel)
+            services.AddSignalR();
 
             // CORS
             services.AddCors(options =>
@@ -106,6 +120,7 @@ namespace API.partonair_v01.GlobalManager
 
             // Swagger/OpenAPI, more at https://aka.ms/aspnetcore/swashbuckle
             services.AddEndpointsApiExplorer();
+
             services.AddSwaggerGen(options =>
             {
                 // Récupère le chemin du fichier XML généré
@@ -116,24 +131,59 @@ namespace API.partonair_v01.GlobalManager
 
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    Name = "Authorization",
-                    Type = SecuritySchemeType.Http,
-                    Scheme = "Bearer",
-                    BearerFormat = "JWT",
-                    In = ParameterLocation.Header,
-                    Description = "Entrez votre token JWT, uniquement la valeur de celui-ci pas de préfix"
-                });
+                Name = "Authorization",
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "Bearer",
+                        BearerFormat = "JWT",
+                        In = ParameterLocation.Header,
+                        Description = "Entrez votre token JWT, pas de préfix 'bearer' ou autre"
+                    });
 
+            // applique le schéma Bearer à tous les endpoints Swagger.
+            options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+                {
+                    // référence la définition "Bearer" définie plus haut.
+                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+                });
             });
+
             services.AddOpenApi();
 
             // JWT Authentication
-            services.Configure<JwtSettings>(configuration.GetSection("JWT")); //chope la section JWT du appsettings.json
+            services.Configure<JwtSettings>(configuration.GetSection("JWT")); //bind la section JWT du appsettings.json
 
             var jwtSettings = configuration.GetSection("JWT").Get<JwtSettings>()
                              ?? throw new InvalidOperationException("JWT settings is missing");
 
-            var keyBytes = Convert.FromBase64String(jwtSettings.SecretKey);
+
+            if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey))
+            {
+                throw new InvalidOperationException("JWT:SecretKey is missing.");
+            }
+
+            byte[] keyBytes;
+
+            try
+            {
+                keyBytes = Convert.FromBase64String(jwtSettings.SecretKey);
+            }
+            catch (FormatException ex)
+            {
+                throw new InvalidOperationException(
+                    "JWT:SecretKey must be a valid Base64 value.",
+                    ex
+                );
+            }
+
+            if (keyBytes.Length < 32)
+            {
+                throw new InvalidOperationException(
+                    "JWT:SecretKey must decode to at least 32 bytes for HS256."
+                );
+            }
+
+
+            //var keyBytes = Convert.FromBase64String(jwtSettings.SecretKey);
             var signingKey = new SymmetricSecurityKey(keyBytes);
 
             services
@@ -150,25 +200,33 @@ namespace API.partonair_v01.GlobalManager
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = signingKey,
                         ClockSkew = TimeSpan.Zero,
-                        RoleClaimType = "role",
-                        NameClaimType = "sub"
+                        RoleClaimType = ClaimTypes.Role,
+                        NameClaimType = ClaimTypes.NameIdentifier
                     };
                     options.Events = new JwtBearerEvents
                     {
                         OnMessageReceived = ctx =>
                         {
+                            // Le transport SignalR (WebSocket/SSE) ne peut pas poser l'en-tête Authorization :
+                            // le client passe le token en query string ; on ne l'accepte que pour nos routes de hub.
+                            var accessToken = ctx.Request.Query["access_token"];
+                            if (!string.IsNullOrEmpty(accessToken) && ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                            {
+                                ctx.Token = accessToken;
+                            }
+
                             var auth = ctx.Request.Headers.Authorization.ToString();
-                            Console.WriteLine($"[JWT] Authorization header: '{(string.IsNullOrEmpty(auth) ? "ABSENT" : auth[..Math.Min(40, auth.Length)] + "...")}'");
+                            //Console.WriteLine($"[JWT] Authorization header: '{(string.IsNullOrEmpty(auth) ? "ABSENT" : auth[..Math.Min(40, auth.Length)] + "...")}'");
                             return Task.CompletedTask;
                         },
                         OnAuthenticationFailed = ctx =>
                         {
-                            Console.WriteLine($"[JWT] Auth failed: {ctx.Exception.GetType().Name} — {ctx.Exception.Message}");
+                            //Console.WriteLine($"[JWT] Auth failed: {ctx.Exception.GetType().Name} — {ctx.Exception.Message}");
                             return Task.CompletedTask;
                         },
                         OnTokenValidated = ctx =>
                         {
-                            Console.WriteLine($"[JWT] Token validated — sub: {ctx.Principal?.FindFirst("sub")?.Value}");
+                            //Console.WriteLine($"[JWT] Token validated — sub: {ctx.Principal?.FindFirst("sub")?.Value}");
                             return Task.CompletedTask;
                         }
                     };

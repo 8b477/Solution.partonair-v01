@@ -6,6 +6,7 @@ using Domain.partonair_v01.Exceptions.Enums;
 using Domain.partonair_v01.Contracts;
 using Domain.partonair_v01.Exceptions;
 using Domain.partonair_v01.Enums;
+using Domain.partonair_v01.Entities;
 
 
 namespace BLL.partonair_v01.Services
@@ -24,149 +25,323 @@ namespace BLL.partonair_v01.Services
 
 
         #region Commands
-        public async Task<ContactViewDTO> CreateAsyncService(ContactCreateDTO contact)
+        public async Task<ContactRequestResultDTO> CreateAsyncService(Guid senderId, Guid receiverId)
         {
+            if (senderId == receiverId)
+                throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, "Tu ne peux pas t’ajouter toi-même.");
+
             return await _UOW.ExecuteInTransactionAsync(async () =>
             {
-                var receiver = await _UOW.Users.GetByGuidAsync(contact.Id_Receiver);
-                var sender = await _UOW.Users.GetByGuidAsync(contact.Id_Sender);
-                var existingContact = await _UOW.Contacts.CheckIsContactExist(receiver.Id, sender.Id);
+                var sender = await _UOW.Users.GetByGuidAsync(senderId);
+                var receiver = await _UOW.Users.GetByGuidAsync(receiverId);
+                var pair = await _UOW.Contacts.GetPairAsync(senderId, receiverId);
 
-                if (existingContact)
-                    throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, "The contact you wish to add is already in the friends list, please check your request");
+                if (pair.Any(contact => contact.ContactStatus == StatusContact.Blocked))
+                    throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, "Une relation de blocage empêche cette demande.");
 
-                var contactEntity = contact.ToEntity(receiver, sender);
+                if (pair.Count > 0)
+                    throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, "Une demande ou une relation existe déjà pour ce profil.");
 
-                var result = await _UOW.Contacts.CreateAsync(contactEntity);
+                var request = ContactMapper.ToPendingEntity(receiver, sender);
+                var created = await _UOW.Contacts.CreateAsync(request);
 
-                return result.ToView();
+                return new ContactRequestResultDTO(created.Id, created.ContactStatus.ToString());
             });
         }
 
         public async Task DeleteAsyncService(Guid idSender, Guid idContact)
         {
-            try
+            await _UOW.ExecuteInTransactionAsync(async () =>
             {
-                await _UOW.BeginTransactionAsync();
+                var relationships = await _UOW.Contacts.GetPairAsync(idSender, idContact);
+                var acceptedRelationships = relationships
+                    .Where(contact => contact.ContactStatus == StatusContact.Accepted)
+                    .ToList();
 
-                var result1 = await _UOW.Contacts.FindContactAsync(idSender, idContact);
-                var result2 = await _UOW.Contacts.FindContactAsync(idContact, idSender);
+                if (acceptedRelationships.Count == 0)
+                    throw new ApplicationLayerException(ApplicationLayerErrorType.EntityIsNotExistingException, "Cette relation d’amitié est introuvable.");
 
-                await _UOW.Contacts.Delete(result1.Id);
-                await _UOW.Contacts.Delete(result2.Id);
-
-                await _UOW.SaveChangesAsync();
-                await _UOW.CommitTransactionAsync();
-
-                return;
-            }
-            catch
-            {
-                await _UOW.RollbackTransactionAsync();
-                throw;
-            }
-        }
-    
-        public async Task<string> AcceptedRequestAsyncService(Guid idContact)
-        {
-            var existingContact = await _UOW.Contacts.GetByGuidAsync(idContact);
-
-            existingContact.IsFriendly = true;
-            existingContact.ContactStatus = StatusContact.Accepted;
-            existingContact.AcceptedAt = DateTime.Now;
-
-            await _UOW.Contacts.Update(existingContact);
-
-            await _UOW.SaveChangesAsync();
-
-            return "Request accepted !";
+                foreach (var relationship in acceptedRelationships)
+                    await _UOW.Contacts.Delete(relationship.Id);
+            });
         }
 
-        public async Task<string> RefusedRequestAsyncService(Guid idContact)
+        public async Task<string> AcceptedRequestAsyncService(Guid userId, Guid idContact)
         {
-            var result = await _UOW.Contacts.GetByGuidAsync(idContact);
+            return await _UOW.ExecuteInTransactionAsync(async () =>
+            {
+                var request = await _UOW.Contacts.GetByGuidAsync(idContact);
+                if (request.ContactReceiverId != userId || request.ContactStatus != StatusContact.Pending)
+                    throw new ApplicationLayerException(ApplicationLayerErrorType.EntityIsNotExistingException, "Cette demande est introuvable ou ne t’est pas destinée.");
 
-            result.IsFriendly = false;
-            result.ContactStatus = StatusContact.Refused;
+                var requester = await _UOW.Users.GetByGuidAsync(request.ContactSenderId);
+                var receiver = await _UOW.Users.GetByGuidAsync(request.ContactReceiverId);
+                var pair = await _UOW.Contacts.GetPairAsync(request.ContactSenderId, request.ContactReceiverId);
 
-            await _UOW.Contacts.Update(result);
+                if (pair.Any(contact => contact.ContactStatus == StatusContact.Blocked))
+                    throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, "Cette relation est bloquée et ne peut pas être acceptée.");
 
-            await _UOW.SaveChangesAsync();
+                var acceptedAt = DateTime.UtcNow;
+                request.IsFriendly = true;
+                request.ContactStatus = StatusContact.Accepted;
+                request.AcceptedAt = acceptedAt;
+                request.IsBlocked = false;
 
-            return "Request refused !";
+                var reciprocal = pair.FirstOrDefault(contact =>
+                    contact.ContactSenderId == receiver.Id && contact.ContactReceiverId == requester.Id);
+
+                if (reciprocal is null)
+                {
+                    await _UOW.Contacts.CreateAsync(new Contact
+                    {
+                        Id = Guid.NewGuid(),
+                        ContactSenderId = receiver.Id,
+                        ContactReceiverId = requester.Id,
+                        ContactSender = receiver,
+                        ContactReceiver = requester,
+                        ContactName = requester.Name,
+                        ContactMail = requester.Mail,
+                        IsFriendly = true,
+                        IsBlocked = false,
+                        ContactStatus = StatusContact.Accepted,
+                        AcceptedAt = acceptedAt
+                    });
+                }
+                else
+                {
+                    reciprocal.ContactStatus = StatusContact.Accepted;
+                    reciprocal.IsFriendly = true;
+                    reciprocal.IsBlocked = false;
+                    reciprocal.AcceptedAt = acceptedAt;
+                }
+
+                return "Demande acceptée.";
+            });
+        }
+
+        public async Task<string> RefusedRequestAsyncService(Guid userId, Guid idContact)
+        {
+            return await _UOW.ExecuteInTransactionAsync(async () =>
+            {
+                var request = await _UOW.Contacts.GetByGuidAsync(idContact);
+                if (request.ContactReceiverId != userId || request.ContactStatus != StatusContact.Pending)
+                    throw new ApplicationLayerException(ApplicationLayerErrorType.EntityIsNotExistingException, "Cette demande est introuvable ou ne t’est pas destinée.");
+
+                request.IsFriendly = false;
+                request.ContactStatus = StatusContact.Refused;
+
+                return "Demande refusée.";
+            });
         }
 
         public async Task<string> LockContactRequestAsyncService(Guid idSender, UserToLock idUserToLock)
         {
-            try
+            if (idSender == idUserToLock.Id_UserToLock)
+                throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, "Tu ne peux pas bloquer ton propre profil.");
+
+            return await _UOW.ExecuteInTransactionAsync(async () =>
             {
-                await _UOW.BeginTransactionAsync();
+                var sender = await _UOW.Users.GetByGuidAsync(idSender);
+                var target = await _UOW.Users.GetByGuidAsync(idUserToLock.Id_UserToLock);
+                var pair = await _UOW.Contacts.GetPairAsync(sender.Id, target.Id);
+                var blockedRelationship = pair.FirstOrDefault(contact =>
+                    contact.ContactSenderId == sender.Id && contact.ContactReceiverId == target.Id);
+                var isNewRelationship = blockedRelationship is null;
 
-                var existingSender = await _UOW.Users.GetByGuidAsync(idSender);
-                var existingUserToBlock = await _UOW.Users.GetByGuidAsync(idUserToLock.Id_UserToLock);
+                if (blockedRelationship?.ContactStatus == StatusContact.Blocked)
+                    throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, "Ce profil est déjà bloqué.");
 
-                var existingContact = await _UOW.Contacts.FindContactAsync(existingSender.Id, existingUserToBlock.Id);
+                if (blockedRelationship is null)
+                {
+                    blockedRelationship = new Contact
+                    {
+                        Id = Guid.NewGuid(),
+                        ContactSender = sender,
+                        ContactReceiver = target,
+                        ContactSenderId = sender.Id,
+                        ContactReceiverId = target.Id,
+                        ContactName = target.Name,
+                        ContactMail = target.Mail
+                    };
+                }
 
+                blockedRelationship.IsFriendly = false;
+                blockedRelationship.ContactStatus = StatusContact.Blocked;
+                blockedRelationship.BlockedAt = DateTime.UtcNow;
+                blockedRelationship.IsBlocked = true;
 
-                if (existingContact.IsBlocked == true)
-                    throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, $"The user : '{existingUserToBlock.Name} is already blocked'");
+                if (isNewRelationship)
+                    await _UOW.Contacts.CreateAsync(blockedRelationship);
 
-                existingContact.IsFriendly = false;
-                existingContact.ContactStatus = StatusContact.Blocked;
-                existingContact.BlockedAt = DateTime.Now;
-                existingContact.IsBlocked = true;
+                var incomingRequest = pair.FirstOrDefault(contact =>
+                    contact.ContactSenderId == target.Id && contact.ContactReceiverId == sender.Id &&
+                    contact.ContactStatus == StatusContact.Pending);
+                if (incomingRequest is not null)
+                {
+                    incomingRequest.ContactStatus = StatusContact.Refused;
+                    incomingRequest.IsFriendly = false;
+                }
 
-                var updated = await _UOW.Contacts.Update(existingContact);
-
-                await _UOW.SaveChangesAsync();
-                await _UOW.CommitTransactionAsync();
-
-                return $"The User : '{existingUserToBlock.Name}' is now blocked. Identifier of request : {updated.Id}";
-            }
-            catch
-            {
-                await _UOW.RollbackTransactionAsync();
-                throw;
-            }
+                return "Profil bloqué.";
+            });
         }
 
         public async Task<string> UnlockContactRequestAsyncService(Guid idSender, UserToUnlock userToUnlock)
         {
-            try
+            return await _UOW.ExecuteInTransactionAsync(async () =>
             {
-                await _UOW.BeginTransactionAsync();
+                var sender = await _UOW.Users.GetByGuidAsync(idSender);
+                var target = await _UOW.Users.GetByGuidAsync(userToUnlock.Id_UserToUnlock);
+                var pair = await _UOW.Contacts.GetPairAsync(sender.Id, target.Id);
+                var blockedRelationship = pair.FirstOrDefault(contact =>
+                    contact.ContactSenderId == sender.Id && contact.ContactReceiverId == target.Id &&
+                    contact.ContactStatus == StatusContact.Blocked);
 
-                var existingSender = await _UOW.Users.GetByGuidAsync(idSender);
-                var existingUserToUnlock = await _UOW.Users.GetByGuidAsync(userToUnlock.Id_UserToUnlock);
+                if (blockedRelationship is null)
+                    throw new ApplicationLayerException(ApplicationLayerErrorType.EntityIsNotExistingException, "Ce profil n’est pas bloqué.");
 
-                var existingContact = await _UOW.Contacts.FindContactAsync(existingSender.Id, existingUserToUnlock.Id);
+                var reciprocalFriendship = pair.FirstOrDefault(contact =>
+                    contact.ContactSenderId == target.Id && contact.ContactReceiverId == sender.Id &&
+                    contact.ContactStatus == StatusContact.Accepted);
 
-                if (existingContact.IsBlocked == false)
-                    throw new ApplicationLayerException(ApplicationLayerErrorType.ConstraintViolationErrorException, $"The user : '{existingUserToUnlock.Name}' is not blocked'");
+                if (reciprocalFriendship is null)
+                    await _UOW.Contacts.Delete(blockedRelationship.Id);
+                else
+                {
+                    blockedRelationship.ContactStatus = StatusContact.Accepted;
+                    blockedRelationship.IsFriendly = true;
+                    blockedRelationship.IsBlocked = false;
+                }
 
-                existingContact.ContactStatus = StatusContact.Accepted;
-                existingContact.IsFriendly = true;
-                existingContact.IsBlocked = false;
-                existingContact.AcceptedAt = existingContact.AcceptedAt ?? DateTime.Now;
+                return "Profil débloqué.";
+            });
+        }
 
-                var updated = await _UOW.Contacts.Update(existingContact);
+        public async Task<bool> AreMutualFriendsAsyncService(Guid userId, Guid otherUserId)
+        {
+            if (userId == otherUserId)
+                return false;
 
-                await _UOW.SaveChangesAsync();
-                await _UOW.CommitTransactionAsync();
+            var pair = await _UOW.Contacts.GetPairAsync(userId, otherUserId);
 
-                return $"The User : '{existingUserToUnlock.Name}' is now unlocked. Identifier of request : {updated.Id}";
-            }
-            catch
-            {
-                await _UOW.RollbackTransactionAsync();
-                throw;
-            }
+            if (pair.Count == 0 || pair.Any(contact => contact.ContactStatus == StatusContact.Blocked))
+                return false;
+
+            return pair.Any(contact => contact.ContactStatus == StatusContact.Accepted);
         }
 
         #endregion
 
 
         #region Queries
+
+        public async Task<ICollection<MyContactViewDTO>> GetFriendsAsyncService(Guid userId)
+        {
+            var accepted = await _UOW.Contacts.GetByUserAndStatusAsync(userId, StatusContact.Accepted);
+            var blocked = await _UOW.Contacts.GetByUserAndStatusAsync(userId, StatusContact.Blocked);
+            var blockedUserIds = blocked
+                .Select(contact => contact.ContactSenderId == userId ? contact.ContactReceiverId : contact.ContactSenderId)
+                .ToHashSet();
+
+            return accepted
+                .Where(contact => !blockedUserIds.Contains(
+                    contact.ContactSenderId == userId ? contact.ContactReceiverId : contact.ContactSenderId))
+                .GroupBy(contact => contact.ContactSenderId == userId ? contact.ContactReceiverId : contact.ContactSenderId)
+                .Select(group => group.First())
+                .Select(contact => contact.ToMyView(
+                    contact.ContactSenderId == userId ? contact.ContactReceiver : contact.ContactSender))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Contacts affichés dans la messagerie : amis + relations bloquées (dans les deux sens),
+        /// pour que la personne bloquée voie la conversation en lecture seule.
+        /// Status vaut "Accepted", "BlockedByMe" ou "BlockedByOther".
+        /// </summary>
+        public async Task<ICollection<MyContactViewDTO>> GetConversationContactsAsyncService(Guid userId)
+        {
+            var friends = await GetFriendsAsyncService(userId);
+            var blocked = await _UOW.Contacts.GetByUserAndStatusAsync(userId, StatusContact.Blocked);
+
+            var blockedContacts = blocked
+                .GroupBy(contact => contact.ContactSenderId == userId ? contact.ContactReceiverId : contact.ContactSenderId)
+                .Select(group =>
+                {
+                    // Si les deux se sont bloqués, c'est mon propre blocage qui prime (je peux débloquer).
+                    var mine = group.FirstOrDefault(contact => contact.ContactSenderId == userId);
+                    var contact = mine ?? group.First();
+                    var status = mine is not null ? RelationshipStatus.BlockedByMe : RelationshipStatus.BlockedByOther;
+
+                    return contact.ToMyView(mine is not null ? contact.ContactReceiver : contact.ContactSender) with { Status = status };
+                });
+
+            return friends
+                .Concat(blockedContacts)
+                .OrderBy(contact => contact.UserName)
+                .ToList();
+        }
+
+        public async Task<RelationshipDTO> GetRelationshipAsyncService(Guid userId, Guid otherUserId)
+        {
+            if (userId == otherUserId)
+                return new RelationshipDTO(RelationshipStatus.None, null);
+
+            var pair = await _UOW.Contacts.GetPairAsync(userId, otherUserId);
+            var mine = pair.FirstOrDefault(contact => contact.ContactSenderId == userId);
+            var theirs = pair.FirstOrDefault(contact => contact.ContactSenderId == otherUserId);
+
+            if (mine?.ContactStatus == StatusContact.Blocked)
+                return new RelationshipDTO(RelationshipStatus.BlockedByMe, null);
+            if (theirs?.ContactStatus == StatusContact.Blocked)
+                return new RelationshipDTO(RelationshipStatus.BlockedByOther, null);
+            if (pair.Any(contact => contact.ContactStatus == StatusContact.Accepted))
+                return new RelationshipDTO(RelationshipStatus.Friends, null);
+            if (mine?.ContactStatus == StatusContact.Pending)
+                return new RelationshipDTO(RelationshipStatus.PendingOutgoing, mine.Id);
+            if (theirs?.ContactStatus == StatusContact.Pending)
+                return new RelationshipDTO(RelationshipStatus.PendingIncoming, theirs.Id);
+            if (pair.Count > 0)
+                return new RelationshipDTO(RelationshipStatus.Refused, null);
+
+            return new RelationshipDTO(RelationshipStatus.None, null);
+        }
+
+        public async Task<ICollection<MyContactViewDTO>> GetIncomingRequestsAsyncService(Guid userId)
+        {
+            var incoming = await _UOW.Contacts.GetByReceiverAndStatusAsync(userId, StatusContact.Pending);
+            var blocked = await _UOW.Contacts.GetByUserAndStatusAsync(userId, StatusContact.Blocked);
+            var blockedUserIds = blocked
+                .Select(contact => contact.ContactSenderId == userId ? contact.ContactReceiverId : contact.ContactSenderId)
+                .ToHashSet();
+
+            return incoming
+                .Where(contact => !blockedUserIds.Contains(contact.ContactSenderId))
+                .Select(contact => contact.ToMyView(contact.ContactSender))
+                .ToList();
+        }
+
+        public async Task<ICollection<MyContactViewDTO>> GetOutgoingRequestsAsyncService(Guid userId)
+        {
+            var outgoing = await _UOW.Contacts.GetBySenderAndStatusAsync(userId, StatusContact.Pending);
+            var blocked = await _UOW.Contacts.GetByUserAndStatusAsync(userId, StatusContact.Blocked);
+            var blockedUserIds = blocked
+                .Select(contact => contact.ContactSenderId == userId ? contact.ContactReceiverId : contact.ContactSenderId)
+                .ToHashSet();
+
+            return outgoing
+                .Where(contact => !blockedUserIds.Contains(contact.ContactReceiverId))
+                .Select(contact => contact.ToMyView(contact.ContactReceiver))
+                .ToList();
+        }
+
+        public async Task<ICollection<MyContactViewDTO>> GetBlockedContactsAsyncService(Guid userId)
+        {
+            var blocked = await _UOW.Contacts.GetBySenderAndStatusAsync(userId, StatusContact.Blocked);
+
+            return blocked
+                .Select(contact => contact.ToMyView(contact.ContactReceiver))
+                .ToList();
+        }
 
         public async Task<ICollection<ContactViewDTO>> GetAllPendingStatusAsyncService(string status)
         {

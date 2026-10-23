@@ -7,15 +7,17 @@ namespace BLL.partonair_v01.Mappers
 {
     public static class ContactMapper
     {
-        internal static Contact ToEntity(this ContactCreateDTO dto, User receiver, User sender)
+        internal static Contact ToPendingEntity(User receiver, User sender)
         {
             return new Contact
             {
-                ContactReceiverId = receiver.Id, // User to add
-                ContactSenderId = dto.Id_Sender, // User Sender
+                Id = Guid.NewGuid(),
+                ContactReceiverId = receiver.Id,
+                ContactSenderId = sender.Id,
                 ContactMail = receiver.Mail,
                 ContactName = receiver.Name,
-                AcceptedAt = DateTime.Now,
+                IsFriendly = false,
+                IsBlocked = false,
                 ContactReceiver = receiver,
                 ContactSender = sender,
                 ContactStatus = StatusContact.Pending
@@ -37,6 +39,20 @@ namespace BLL.partonair_v01.Mappers
                 entity.AcceptedAt,
                 entity.ContactStatus.ToString()
             );
+        }
+
+        internal static MyContactViewDTO ToMyView(this Contact entity, User otherUser)
+        {
+            return new MyContactViewDTO(
+                entity.Id,
+                otherUser.Id,
+                otherUser.Name,
+                otherUser.Role.ToString(),
+                entity.ContactStatus.ToString(),
+                entity.AcceptedAt,
+                entity.BlockedAt,
+                otherUser.ProfileUser?.AvatarSeed,
+                otherUser.ProfileUser?.Id);
         }
 
 

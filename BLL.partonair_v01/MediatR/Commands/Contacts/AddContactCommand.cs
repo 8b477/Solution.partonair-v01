@@ -1,9 +1,8 @@
-﻿using SharedModels.partonair_v01.DTOS;
-
-using MediatR;
+﻿using MediatR;
+using SharedModels.partonair_v01.DTOS;
 
 
 namespace BLL.partonair_v01.MediatR.Commands.Contacts
 {
-    public record AddContactCommand(ContactCreateDTO Contact) : IRequest<ContactViewDTO>;
+    public record AddContactCommand(Guid SenderId, Guid ReceiverId) : IRequest<ContactRequestResultDTO>;
 }

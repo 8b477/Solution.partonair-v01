@@ -1,33 +1,39 @@
-﻿
-
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace SharedModels.partonair_v01.DTOS
 {
-    public record EvaluationCreateDTO
-        (   
-            Guid Id_Owner,
-
-            [Required(ErrorMessage = "The field is required")]
-            [MinLength(5,ErrorMessage = "The field must contain 5 characters")]
-            [MaxLength(255,ErrorMessage = "The field should contain max 255 characters")]
-            string Commentary,
-
-            [Required(ErrorMessage = "The field is required")]
-            [Range(1,5,ErrorMessage = "The attempt value is between 1 and 5 'integer'")]
-            int Value
-        );
-
-    public record EvaluationUpdateDTO
+    /// <summary>Création ou modification de mon avis sur un membre.</summary>
+    public record EvaluationUpsertDTO
         (
-            Guid Id_Sender,
+            [Range(0, 5, ErrorMessage = "The value must be between 0 and 5")]
+            int Value,
 
-            [MaxLength(500, ErrorMessage = "The field should contain max 500 characters")]
-            string? Commentary,
-
-            [Range(0, 5, ErrorMessage = "The attempt value is between 0 and 5")]
-            int? Value
+            [Required(ErrorMessage = "The field is required")]
+            [MinLength(10, ErrorMessage = "The field must contain at least 10 characters")]
+            [MaxLength(500, ErrorMessage = "The field must not exceed 500 characters")]
+            string Commentary
         );
 
-    public record EvaluationViewDTO(Guid Id, DateTime CreatedAt, DateTime? UpdateAt, int Value, string Commentary, Guid Id_Owner, string OwnerName, Guid Id_Sender, string SenderName);
+    public record EvaluationViewDTO(
+        Guid Id,
+        int Value,
+        string Commentary,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt,
+        Guid ReceiverId,
+        Guid SenderId,
+        string SenderName,
+        string SenderRole,
+        string? SenderAvatarSeed);
+
+    /// <summary>Avis reçus par un membre, vus par l'utilisateur courant.</summary>
+    public record UserEvaluationsDTO(
+        Guid UserId,
+        decimal Average,
+        int Count,
+        bool CanEvaluate,
+        EvaluationViewDTO? MyEvaluation,
+        ICollection<EvaluationViewDTO> Evaluations);
+
+    public record EvaluationUpsertResultDTO(EvaluationViewDTO Evaluation, bool IsNew);
 }

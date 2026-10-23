@@ -17,7 +17,7 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -177,7 +177,9 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
 
                     b.HasIndex("EvalReceiverId");
 
-                    b.HasIndex("EvalSenderId");
+                    b.HasIndex("EvalSenderId", "EvalReceiverId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Evaluations_Sender_Receiver");
 
                     b.ToTable("Evaluations", null, t =>
                         {
@@ -236,6 +238,57 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Domain.partonair_v01.Entities.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("DATETIME2")
+                        .HasColumnName("read_at");
+
+                    b.Property<Guid>("ReceiverId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("receiver_id");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("sender_id");
+
+                    b.Property<DateTime>("SentAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("DATETIME2")
+                        .HasColumnName("sent_at")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiverId", "ReadAt")
+                        .HasDatabaseName("IX_Messages_Unread");
+
+                    b.HasIndex("ReceiverId", "SenderId", "SentAt")
+                        .HasDatabaseName("IX_Messages_Conversation_Reverse");
+
+                    b.HasIndex("SenderId", "ReceiverId", "SentAt")
+                        .HasDatabaseName("IX_Messages_Conversation");
+
+                    b.ToTable("Messages", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Messages_Content_NotEmpty", "LEN(LTRIM(RTRIM([content]))) > 0");
+
+                            t.HasCheckConstraint("CK_Messages_NoSelf", "[sender_id] <> [receiver_id]");
+                        });
+                });
+
             modelBuilder.Entity("Domain.partonair_v01.Entities.ProfileUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -244,11 +297,40 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<int>("AvatarRegenCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("avatar_regen_count");
+
+                    b.Property<DateOnly?>("AvatarRegenDate")
+                        .HasColumnType("DATE")
+                        .HasColumnName("avatar_regen_date");
+
+                    b.Property<string>("AvatarSeed")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("avatar_seed")
+                        .HasDefaultValueSql("CONVERT(NVARCHAR(64), NEWID())");
+
+                    b.Property<int>("ContractTypes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("contract_types");
+
                     b.Property<bool>("IsPublic")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false)
                         .HasColumnName("is_public");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("location");
 
                     b.Property<DateTime>("ProfileCreatedAt")
                         .ValueGeneratedOnAdd()
@@ -266,11 +348,45 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                         .HasColumnType("DATETIME")
                         .HasColumnName("profile_updated_at");
 
+                    b.Property<decimal>("RatingAverage")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(3, 2)
+                        .HasColumnType("decimal(3,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("rating_average");
+
+                    b.Property<int>("RatingCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("rating_count");
+
+                    b.Property<string>("RemotePolicy")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("remote_policy");
+
+                    b.Property<string>("Sector")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("sector");
+
+                    b.Property<bool>("ShowSelfInDirectory")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("show_self_in_directory");
+
                     b.Property<string>("Skills")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("skills");
+
+                    b.Property<string>("SoughtPosition")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("sought_position");
 
                     b.Property<byte>("Stars")
                         .HasColumnType("TINYINT")
@@ -425,6 +541,27 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                     b.Navigation("ProfileUser");
                 });
 
+            modelBuilder.Entity("Domain.partonair_v01.Entities.Message", b =>
+                {
+                    b.HasOne("Domain.partonair_v01.Entities.User", "Receiver")
+                        .WithMany("MessagesReceived")
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_MESSAGES_RECEIVER");
+
+                    b.HasOne("Domain.partonair_v01.Entities.User", "Sender")
+                        .WithMany("MessagesSent")
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_MESSAGES_SENDER");
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Sender");
+                });
+
             modelBuilder.Entity("Domain.partonair_v01.Entities.ProfileUser", b =>
                 {
                     b.HasOne("Domain.partonair_v01.Entities.User", "User")
@@ -453,6 +590,10 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Migrations
                     b.Navigation("EvaluationsReceived");
 
                     b.Navigation("EvaluationsSent");
+
+                    b.Navigation("MessagesReceived");
+
+                    b.Navigation("MessagesSent");
 
                     b.Navigation("ProfileUser");
                 });

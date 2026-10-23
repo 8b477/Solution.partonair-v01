@@ -10,7 +10,7 @@ namespace BLL.partonair_v01.MediatR.Commands.Profiles
         private readonly IProfileService _profileService = profileService;
         public async Task<ProfileViewDTO> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
         {
-            return await _profileService.UpdateAsyncService(request.Id, request.Profile);
+            return await _profileService.UpdateAsyncService(request.IdUser, request.Id, request.Profile);
         }
     }
 }

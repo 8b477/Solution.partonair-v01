@@ -3,16 +3,10 @@
 
 namespace BLL.partonair_v01.Interfaces
 {
-
     public interface IEvaluationService
     {
-        Task<EvaluationViewDTO> CreateAsyncService(Guid idOwner, EvaluationCreateDTO eval);
-        Task DeleteAsyncService(Guid id);
-        Task<EvaluationViewDTO> UpdateAsyncService(Guid idEval, EvaluationUpdateDTO eval);
-
-
-        Task<EvaluationViewDTO> GetByGuidAsyncService(Guid id);
-        Task<ICollection<EvaluationViewDTO>> GetAllGrouppByUserAsyncService();
+        Task<UserEvaluationsDTO> GetUserEvaluationsAsyncService(Guid viewerId, Guid userId);
+        Task<EvaluationUpsertResultDTO> UpsertAsyncService(Guid senderId, Guid receiverId, EvaluationUpsertDTO evaluation);
+        Task DeleteMineAsyncService(Guid senderId, Guid receiverId);
     }
 }
-
