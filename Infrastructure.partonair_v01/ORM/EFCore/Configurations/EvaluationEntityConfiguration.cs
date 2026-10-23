@@ -57,6 +57,11 @@ namespace Infrastructure.partonair_v01.ORM.EFCore.Configurations
                 .HasConstraintName("FK_EVAL_SENDER")
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Un seul avis par auteur et par membre évalué
+            builder.HasIndex(e => new { e.EvalSenderId, e.EvalReceiverId })
+                .IsUnique()
+                .HasDatabaseName("UX_Evaluations_Sender_Receiver");
+
             // Check constraint
             builder.ToTable(t => t.HasCheckConstraint("CK_Announcements_EvaluationValue_Valid", "evaluation_value BETWEEN 0 AND 5"));
         }

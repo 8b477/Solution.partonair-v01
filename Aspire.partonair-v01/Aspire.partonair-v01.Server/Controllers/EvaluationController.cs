@@ -1,128 +1,91 @@
-﻿using BLL.partonair_v01.MediatR.Commands.Evaluations;
+﻿using API.partonair_v01.Hubs;
+using API.partonair_v01.Token;
+using BLL.partonair_v01.MediatR.Commands.Evaluations;
 using BLL.partonair_v01.MediatR.Queries.Evaluations;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using SharedModels.partonair_v01.DTOS;
 
 
 namespace API.partonair_v01.Controllers
 {
+    /// <summary>
+    /// Avis entre membres. L'auteur est toujours déduit du JWT, jamais du corps de la requête.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    public class EvaluationController(IMediator mediator) : ControllerBase
+    [Authorize]
+    public class EvaluationController(IMediator mediator, IHttpContextAccesor httpContextAccesor, IHubContext<RealtimeHub> hubContext) : ControllerBase
     {
         private readonly IMediator _mediator = mediator;
+        private readonly IHttpContextAccesor _httpContextAccesor = httpContextAccesor;
+        private readonly IHubContext<RealtimeHub> _hubContext = hubContext;
 
 
         /// <summary>
-        /// Récupère une évaluation par son identifiant unique.
+        /// Avis reçus par un membre : moyenne, nombre, liste, mon avis éventuel et si je peux l'évaluer.
         /// </summary>
-        /// <remarks>
-        /// Cet endpoint retourne les détails d'une évaluation spécifique en fonction de son GUID.
-        /// </remarks>
-        /// <param name="id">L'identifiant GUID unique de l'évaluation.</param>
-        /// <response code="200">Succès - Évaluation trouvée et retournée.</response>
-        /// <response code="204">Aucun contenu - Aucune évaluation avec cet identifiant.</response>
-        /// <response code="500">Erreur interne serveur.</response>
-        /// <returns>Les données de l'évaluation correspondante.</returns>
-        [HttpGet("{id:guid}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        /// <param name="userId">Identifiant du membre évalué.</param>
+        [HttpGet("user/{userId:guid}")]
+        [ProducesResponseType(typeof(UserEvaluationsDTO), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetForUserAsync(Guid userId)
+        {
+            if (!TryGetCurrentUserId(out var viewerId))
+                return Unauthorized();
+
+            return Ok(await _mediator.Send(new GetUserEvaluationsQuery(viewerId, userId)));
+        }
+
+        /// <summary>
+        /// Crée ou modifie mon avis sur un membre (note 0-5 + commentaire).
+        /// </summary>
+        /// <remarks>Réservé aux amis non bloqués. Un seul avis par membre évalué.</remarks>
+        /// <param name="userId">Identifiant du membre évalué.</param>
+        /// <param name="evaluation">Note et commentaire.</param>
+        /// <response code="200">Succès - Avis enregistré.</response>
+        /// <response code="409">Pas ami avec ce membre, ou tentative d'auto-évaluation.</response>
+        [HttpPut("user/{userId:guid}")]
+        [ProducesResponseType(typeof(EvaluationUpsertResultDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> UpsertAsync(Guid userId, EvaluationUpsertDTO evaluation)
+        {
+            if (!TryGetCurrentUserId(out var senderId))
+                return Unauthorized();
+
+            var result = await _mediator.Send(new UpsertEvaluationCommand(senderId, userId, evaluation));
+
+            await _hubContext.Clients.User(userId.ToString()).SendAsync("EvaluationReceived", result);
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Supprime mon avis sur un membre.
+        /// </summary>
+        /// <param name="userId">Identifiant du membre évalué.</param>
+        /// <response code="204">Succès - Avis supprimé.</response>
+        /// <response code="404">Aucun avis de ma part sur ce membre.</response>
+        [HttpDelete("user/{userId:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetByGuidAsync(Guid id)
-        {
-            var evaluation = await _mediator.Send(new GetByGuidEvaluationQuery(id));
-
-            return
-                  evaluation is null
-                ? NoContent()
-                : Ok(new { evaluation });
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetAllAsync()
-        {
-            var evaluations = await _mediator.Send(new GetAllEvaluationFilteredbyUserQuery());
-
-            return
-                  evaluations is null
-                ? NoContent()
-                : Ok(new { evaluations });
-        }
-
-        /// <summary>
-        /// Crée une nouvelle évaluation.
-        /// </summary>
-        /// <remarks>
-        /// Cet endpoint crée une nouvelle évaluation associée à l'utilisateur propriétaire spécifié.
-        /// Les données d'évaluation doivent être fournies dans le corps de la requête.
-        /// </remarks>
-        /// <param name="idOwner">L'identifiant GUID de l'utilisateur propriétaire de l'évaluation.</param>
-        /// <param name="eval">Les données de création d'évaluation (EvaluationCreateDTO).</param>
-        /// <response code="200">Succès - Évaluation créée avec succès.</response>
-        /// <response code="400">Requête invalide - Données manquantes ou invalides.</response>
-        /// <response code="500">Erreur interne serveur.</response>
-        /// <returns>Les données de l'évaluation créée.</returns>
-        [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreateAsync([FromQuery] Guid idOwner, EvaluationCreateDTO eval)
-        {
-            var evaluationCreated = await _mediator.Send(new AddEvaluationCommand(idOwner, eval));
-
-            return Ok(evaluationCreated);
-        }
-
-        /// <summary>
-        /// Met à jour une évaluation existante.
-        /// </summary>
-        /// <remarks>
-        /// Cet endpoint met à jour les détails d'une évaluation existante.
-        /// Seul le propriétaire de l'évaluation peut effectuer cette opération.
-        /// </remarks>
-        /// <param name="idEval">L'identifiant GUID de l'évaluation à mettre à jour.</param>
-        /// <param name="eval">Les données de mise à jour d'évaluation (EvaluationUpdateDTO).</param>
-        /// <response code="200">Succès - Évaluation mise à jour avec succès.</response>
-        /// <response code="400">Requête invalide - Données manquantes ou invalides.</response>
-        /// <response code="404">Non trouvé - Aucune évaluation avec cet identifiant.</response>
-        /// <response code="500">Erreur interne serveur.</response>
-        /// <returns>Les données de l'évaluation mise à jour.</returns>
-        [HttpPatch]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateAsync(Guid idEval, EvaluationUpdateDTO eval)
+        public async Task<IActionResult> DeleteMineAsync(Guid userId)
         {
-            var evaluationCreated = await _mediator.Send(new UpdateEvaluationCommand(idEval, eval));
+            if (!TryGetCurrentUserId(out var senderId))
+                return Unauthorized();
 
-            return Ok(evaluationCreated);
-        }
+            await _mediator.Send(new DeleteMyEvaluationCommand(senderId, userId));
 
-        /// <summary>
-        /// Supprime une évaluation existante.
-        /// </summary>
-        /// <remarks>
-        /// Cet endpoint supprime une évaluation de la base de données.
-        /// Seul le propriétaire de l'évaluation peut effectuer cette opération.
-        /// </remarks>
-        /// <param name="id">L'identifiant GUID de l'évaluation à supprimer.</param>
-        /// <response code="204">Succès - Évaluation supprimée sans contenu retourné.</response>
-        /// <response code="400">Requête invalide - Identifiant manquant ou invalide.</response>
-        /// <response code="404">Non trouvé - Aucune évaluation avec cet identifiant.</response>
-        /// <response code="500">Erreur interne serveur.</response>
-        /// <returns>Aucun contenu.</returns>
-        [HttpDelete]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> DeleteAsync(Guid id)
-        {
-            await _mediator.Send(new DeleteEvaluationCommand(id));
+            await _hubContext.Clients.User(userId.ToString()).SendAsync("EvaluationRemoved", new { senderId });
 
             return NoContent();
+        }
+
+        private bool TryGetCurrentUserId(out Guid userId)
+        {
+            return Guid.TryParse(_httpContextAccesor.UserId(), out userId);
         }
     }
 }
