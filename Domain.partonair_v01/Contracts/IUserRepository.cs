@@ -36,9 +36,9 @@ namespace Domain.partonair_v01.Contracts
         /// <summary>
         /// Fetch a User by Foreign Key profile. 
         /// </summary>
-        /// <param name="idProfile">Represent the identifier to find</param>
+        /// <param name="idUser">Represent the identifier to find</param>
         /// <returns>Returns an asynchronous Entity <c>User</c> based on Foreign key Profile</returns>
-        Task<User> GetByForeignKeyProfilAsync(Guid idProfile);
+        Task<User> GetByForeignKeyProfilAsync(Guid idUser);
 
         /// <summary>
         /// Checks if the specified email already exists in the database.

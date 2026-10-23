@@ -1,7 +1,12 @@
-import { useState } from "react";
-import { userApi } from "../../services/api";
+import { useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import AuthContext from "../../contexts/auth/Auth-context";
+import { signinApi, userApi } from "../../services/api";
 
 const RegisterModal = ({ open, onClose, switchModal }) => {
+	const { login } = useContext(AuthContext);
+	const navigate = useNavigate();
+
 	const [form, setForm] = useState({ userName: "", email: "", password: "", confirmPassword: "" });
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
@@ -29,9 +34,25 @@ const RegisterModal = ({ open, onClose, switchModal }) => {
 				password: form.password,
 				confirmPassword: form.confirmPassword,
 			});
-			setSuccess(true);
+
+			// Connexion automatique après inscription, puis création de profil
+			try {
+				const data = await signinApi.login({ email: form.email, password: form.password });
+				login(data);
+				onClose();
+				navigate("/profile/setup");
+			} catch {
+				// Si la connexion auto échoue, on retombe sur l'écran succès + connexion manuelle
+				setSuccess(true);
+			}
 		} catch (err) {
-			setError(err.status === 400 ? "Données invalides, vérifie les champs." : "Une erreur est survenue.");
+			if (err.status === 400) {
+				setError(err.serverMessage || "Données invalides, vérifie les champs.");
+			} else if (err.status === 409) {
+				setError("Cette adresse email est déjà utilisée.");
+			} else {
+				setError("Une erreur est survenue. Réessaie.");
+			}
 		} finally {
 			setLoading(false);
 		}

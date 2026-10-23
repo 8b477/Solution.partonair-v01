@@ -26,13 +26,18 @@ const LoginModal = ({ open, onClose, switchModal }) => {
 			login(data);
 			onClose();
 
-			if (!data.profileId) {
-				navigate("/profile/setup");
+			// Profil existant -> annuaire des profils, sinon -> création de profil
+			if (data.profileId) {
+				navigate("/profiles");
 			} else {
-				navigate("/profile");
+				navigate("/profile/setup");
 			}
 		} catch (err) {
-			setError(err.status === 400 ? "Identifiants incorrects." : "Une erreur est survenue.");
+			if (err.status === 400) {
+				setError(err.serverMessage || "Email ou mot de passe incorrect.");
+			} else {
+				setError("Une erreur est survenue. Réessaie.");
+			}
 		} finally {
 			setLoading(false);
 		}

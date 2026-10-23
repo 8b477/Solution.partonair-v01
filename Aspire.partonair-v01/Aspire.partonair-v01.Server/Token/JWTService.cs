@@ -5,29 +5,34 @@ using System.Security.Claims;
 
 namespace API.partonair_v01.Token
 {
+    /// <summary>
+    /// Génère et valide les jetons JWT de l'application.
+    /// La configuration est injectée via <see cref="IOptions{JwtSettings}"/>
+    /// et provient de la section <c>JWT</c>.
+    /// </summary>
     public class JWTService
     {
         private readonly JwtSettings _jwtSettings;
-        private readonly string _secretKey;
 
-        public JWTService(IOptions<JwtSettings> jwtOptions) // IOptions lis les fichiers de configuration et je précise la section que je veux lire (JwtSettings) et me bind à la classe JwtSettings
+        public JWTService(IOptions<JwtSettings> jwtOptions) 
         {
-            _jwtSettings = jwtOptions.Value; // injecte les valeurs récup dans mon objet
+            _jwtSettings = jwtOptions.Value;
 
             if (string.IsNullOrWhiteSpace(_jwtSettings.SecretKey))
             {
                 throw new InvalidOperationException("JwtSettings:SecretKey is missing.");
             }
-
-            _secretKey = _jwtSettings.SecretKey;
         }
 
         public string GenerateToken(string userId, string role)
         {
             try
             {
+                var now = DateTime.UtcNow;
+                var expires = now.AddHours(_jwtSettings.ExpiryHours);
+
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var keyBytes = Convert.FromBase64String(_secretKey);
+                var keyBytes = Convert.FromBase64String(_jwtSettings.SecretKey);
 
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
@@ -37,20 +42,24 @@ namespace API.partonair_v01.Token
                         new Claim(ClaimTypes.NameIdentifier, userId), // id
                         new Claim(ClaimTypes.Role, role)              // role
                     ]),
-                    Expires = DateTime.UtcNow.AddHours(_jwtSettings.ExpiryHours),
+                    NotBefore = now,
+                    IssuedAt = now,
+                    Expires = expires,
                     SigningCredentials = new SigningCredentials(
                         new SymmetricSecurityKey(keyBytes),
                         SecurityAlgorithms.HmacSha256Signature)
                 };
 
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-                return tokenHandler.WriteToken(token);
+                // crée le JWT
+                var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+                var token = tokenHandler.WriteToken(securityToken);
+
+                return token;
             }
             catch (Exception ex)
             {
                 throw new Exception("Token generation failed: " + ex.Message, ex);
             }
         }
-
     }
 }
